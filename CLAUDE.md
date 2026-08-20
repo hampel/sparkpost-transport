@@ -28,6 +28,11 @@ composer update --with="symfony/mailer:^7.0" --with="symfony/mime:^7.0"
 `minimum-stability: dev`, because the API package is not on Packagist yet. Both come out, and the
 `hampel/sparkpost` constraint becomes a real one, at the first release.
 
+Two consequences until then: **CI cannot pass**, because the workflow is written for the published
+state and GitHub has no sibling checkout to resolve the path repository against; and
+`hampel/sparkpost` must reach Packagist **before** this package, since this one requires it. Local
+development is unaffected — `composer install` resolves `../sparkpost` from disk.
+
 ## Symfony 5.4 is supported on purpose
 
 The constraint is `^5.4|^6.4|^7.0`, and 5.4 is not there by accident or generosity. **XenForo 2.3
