@@ -1,0 +1,69 @@
+{
+    "name": "hampel/sparkpost-transport",
+    "description": "A Symfony Mailer transport for SparkPost, built on hampel/sparkpost",
+    "authors": [
+        {
+            "name": "Simon Hampel",
+            "email": "simon@hampelgroup.com",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/hampel/sparkpost-transport/issues",
+        "source": "https://github.com/hampel/sparkpost-transport"
+    },
+    "keywords": [
+        "sparkpost",
+        "email",
+        "symfony",
+        "mailer",
+        "transport"
+    ],
+    "homepage": "https://github.com/hampel/sparkpost-transport",
+    "license": "MIT",
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../sparkpost"
+        }
+    ],
+    "require": {
+        "php": ">=8.3",
+        "hampel/sparkpost": "*",
+        "symfony/mailer": "^5.4|^6.4|^7.0",
+        "symfony/mime": "^5.4|^6.4|^7.0"
+    },
+    "require-dev": {
+        "guzzlehttp/guzzle": "^7.8",
+        "hampel/rig": "^0.1.2",
+        "laravel/pint": "^1.30",
+        "phpstan/phpstan": "^2.1.22",
+        "phpunit/phpunit": "^12.0"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Hampel\\SparkPost\\Transport\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Hampel\\SparkPost\\Transport\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse",
+        "format": "pint",
+        "lint": "pint --test",
+        "check": [
+            "@lint",
+            "@analyse",
+            "@test"
+        ]
+    }
+}
