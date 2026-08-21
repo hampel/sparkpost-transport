@@ -27,14 +27,21 @@ composer update --with="symfony/mailer:^7.0" --with="symfony/mime:^7.0"
 
 PHPStan runs at **level 10** over `src` and `tests`.
 
-**`composer.json` carries a path repository pointing at `../sparkpost`**, plus
-`minimum-stability: dev`, because the API package is not on Packagist yet. Both come out, and the
-`hampel/sparkpost` constraint becomes a real one, at the first release.
+`hampel/sparkpost` is on Packagist as of 0.1.0, and the constraint here is `^0.1.0` — which
+Composer reads as `>=0.1.0 <0.2.0`. That is deliberate rather than conservative: 0.x makes no
+compatibility promise, so a wider constraint would let an API that is still moving arrive
+unannounced. The path repository, `minimum-stability: dev` and `prefer-stable` that stood in for a
+published dependency are all gone.
 
-Two consequences until then: **CI cannot pass**, because the workflow is written for the published
-state and GitHub has no sibling checkout to resolve the path repository against; and
-`hampel/sparkpost` must reach Packagist **before** this package, since this one requires it. Local
-development is unaffected — `composer install` resolves `../sparkpost` from disk.
+**The `Declared dependencies` CI job is the one worth understanding.** It installs `--no-dev` and
+runs PHPStan over `src/` alone, so anything called there that is not in `require` comes back as
+`class.notFound`. Nothing else catches it — a normal run has Guzzle and PHPUnit installed and sees
+nothing wrong, and the package would fatal for the consumer instead. Guzzle is the live risk: it is
+a dev dependency here, and a `GuzzleHttp\` import in `src/` would look entirely at home. The job
+needs PHPStan from outside the package, since `--no-dev` deletes it, and `-c .github/phpstan-nodev.neon`
+is not optional — without it PHPStan finds the package's own config, which points at `tests/` and can
+no longer resolve PHPUnit, turning the run into a configuration error you will read as a dependency
+result.
 
 ## Symfony 5.4 is supported on purpose
 
@@ -50,8 +57,9 @@ Consequences when writing code here:
   `Email::attachPart()` replaced it in 7.0; `attach()` and `embed()` are in every one, which is why the
   tests use those. `TextPart::getDisposition()`, `getName()` and `DataPart::getFilename()` are all
   post-5.4 — read the prepared headers instead, as `EmailConverter` does.
-- **Check a new call against 5.4 before using it**, in
-  `/srv/www/xenforo23.local/src/vendor/symfony/mime`, which is the exact copy the add-on runs on.
+- **Check a new call against 5.4 before using it** — against a real `symfony/mime` 5.4 checkout,
+  not the API docs, which document the current version. `composer update --with="symfony/mime:^5.4"
+  --prefer-lowest` gets you one; a XenForo 2.3 install has the exact copy the add-on runs on.
 
 ## Architecture
 
@@ -145,8 +153,8 @@ adding a property is one line and an old payload still unserialises.
 
 ## Version support
 
-`php: >=8.3` per the Tier A policy in `/srv/www/version-support.html`, with PHPStan analysing the
-whole 8.3–8.5 range in one pass. Keep `phpVersion` in `phpstan.neon` in step with the `php`
+`php: >=8.3`, per the Tier A support policy these packages follow — the widest range, verified by
+CI at the corners. PHPStan analyses the whole 8.3–8.5 range in one pass. Keep `phpVersion` in `phpstan.neon` in step with the `php`
 constraint in `composer.json`.
 
 ## Releases
