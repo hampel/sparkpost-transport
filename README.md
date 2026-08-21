@@ -32,7 +32,8 @@ use Symfony\Component\Mime\Email;
 $factory   = new HttpFactory();
 $sparkpost = new SparkPost(new Config('MY-API-KEY'), new Client(), $factory, $factory);
 
-$mailer = new Mailer(new SparkPostTransport($sparkpost));
+$transport = new SparkPostTransport($sparkpost);
+$mailer    = new Mailer($transport);
 
 $mailer->send(
     (new Email())
@@ -58,13 +59,18 @@ Everything that leaves the transport implements Symfony's `TransportExceptionInt
 including API errors and connection failures, so the one `catch` a Symfony consumer
 already writes is enough.
 
-The SparkPost transmission id is recorded as the message id:
+The SparkPost transmission id is recorded as the message id. `Mailer::send()` returns
+`void`, so the `SentMessage` carrying it comes from the transport:
 
 ```php
-$sent = $mailer->send($email);
+$sent = $transport->send($email);
+
 $sent->getMessageId();   // the transmission id, for matching against message events
 $sent->getDebug();       // "SparkPost transmission 1166…: 2 accepted, 0 rejected"
 ```
+
+The transport dispatches the same events the mailer does. It returns `null` only when a
+listener rejected the message before it was sent.
 
 ## SparkPost-specific fields
 
