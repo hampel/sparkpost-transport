@@ -20,13 +20,21 @@ jobs:
 
     strategy:
       fail-fast: false
-      # The corners of the supported range, not the whole matrix: the floor with the
-      # oldest dependencies it claims, the floor with current ones, and the ceiling.
-      # Everything between fails only when a corner does.
+      # The corners of the supported range, not the whole matrix. Everything between
+      # fails only when a corner does.
+      #
+      # One job per Symfony major, because all three are declared and a declared version
+      # that is never resolved is an unbacked promise. The floor takes --prefer-lowest,
+      # which is the only thing that ever resolves the dev toolchain low.
+      #
+      # Symfony 7 gets both ends of the PHP range: it runs on 8.2 through 8.5, so it
+      # spans the range this package supports and the top and bottom of that span are
+      # different resolutions.
       matrix:
         include:
           - { php: '8.3', symfony: '^5.4', deps: '--prefer-lowest' }
           - { php: '8.3', symfony: '^6.4', deps: '' }
+          - { php: '8.3', symfony: '^7.0', deps: '' }
           - { php: '8.5', symfony: '^7.0', deps: '' }
 
     steps:
