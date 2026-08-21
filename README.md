@@ -1,5 +1,7 @@
 # SparkPost transport for Symfony Mailer
 
+[![Tests](https://github.com/hampel/sparkpost-transport/actions/workflows/tests.yml/badge.svg)](https://github.com/hampel/sparkpost-transport/actions/workflows/tests.yml)
+
 By [Simon Hampel](mailto:simon@hampelgroup.com)
 
 Sends Symfony Mailer messages through the SparkPost transmissions API, using
