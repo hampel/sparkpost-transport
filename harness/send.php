@@ -138,8 +138,8 @@ if ($returnPath !== null) {
     // SparkPost polices the From and not the return path, which is the asymmetry that
     // makes "it validates sender domains" plausible and wrong. Established 21-22 August
     // 2026 across both packages: a From outside the configured sending domains is refused
-    // at the API; a return path on a domain nobody owns came back 200 with 1 accepted, and
-    // that message then never arrived.
+    // at the API with HTTP 400 "Unconfigured Sending Domain <domain>"; a return path on a
+    // domain nobody owns came back 200 with 1 accepted, and that message never arrived.
     $io->info('SparkPost checks the From against your sending domains. It does not check');
     $io->info('this - a 200 means the payload was well formed and nothing more, so a bogus');
     $io->info('return path is taken and the mail then quietly fails to arrive. Read the');
