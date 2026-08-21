@@ -57,7 +57,7 @@ if ($sink) {
     $dispatcher->addSubscriber(new SinkEnvelopeListener());
 }
 
-$transport = new SparkPostTransport($sparkpost, null, $dispatcher);
+$transport = new SparkPostTransport($sparkpost, $dispatcher);
 
 $io->value('transport', (string) $transport);
 $io->value('sink', $sink ? 'yes - nothing will be delivered' : 'no');

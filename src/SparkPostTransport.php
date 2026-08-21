@@ -35,9 +35,9 @@ final class SparkPostTransport extends AbstractTransport
 
     public function __construct(
         private readonly SparkPost $sparkpost,
-        ?EmailConverter $converter = null,
         ?EventDispatcherInterface $dispatcher = null,
         ?LoggerInterface $logger = null,
+        ?EmailConverter $converter = null,
     ) {
         $this->converter = $converter ?? new EmailConverter();
 

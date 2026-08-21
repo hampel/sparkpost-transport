@@ -30,7 +30,7 @@ abstract class TestCase extends BaseTestCase
 
         $sparkpost = new SparkPost(new Config('test-api-key'), $this->client, $factory, $factory);
 
-        return new SparkPostTransport($sparkpost, null, null, $logger ?? new NullLogger());
+        return new SparkPostTransport($sparkpost, null, $logger ?? new NullLogger());
     }
 
     /**
