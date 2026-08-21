@@ -139,9 +139,9 @@ as though it were addressed normally.
 
 ## Symfony versions
 
-`^5.4|^6.4|^7.0`, and the suite runs against all three. 5.4 is included deliberately: it is
-what XenForo 2.3 bundles, and a XenForo add-on cannot substitute its own — the host's
-autoloader wins.
+`^5.4|^6.4|^7.0`, and the suite runs against all three. 5.4 is included deliberately: this
+package is used inside host applications that bundle Symfony themselves at 5.4 and load
+their own copy first, so a consumer there cannot substitute a newer one.
 
 ## Licence
 

@@ -11,8 +11,8 @@ use Psr\Log\AbstractLogger;
  *
  * The parameters are deliberately untyped. psr/log 1.1 declares log() without types and
  * psr/log 3 declares `string|\Stringable $message`; an untyped parameter is wider than
- * both, so this one class satisfies every version the package supports - including the
- * psr/log 1.1 that XenForo ships, which is the --prefer-lowest corner in CI.
+ * both, so this one class satisfies every version the package supports - including
+ * psr/log 1.1, which is the --prefer-lowest corner in CI.
  */
 final class RecordingLogger extends AbstractLogger
 {

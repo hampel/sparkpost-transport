@@ -45,11 +45,15 @@ result.
 
 ## Symfony 5.4 is supported on purpose
 
-The constraint is `^5.4|^6.4|^7.0`, and 5.4 is not there by accident or generosity. **XenForo 2.3
-bundles `symfony/mailer` and `symfony/mime` at v5.4.52**, and a XenForo add-on installs its own
-`vendor/` alongside XenForo's own — so whatever the add-on declares, XenForo's autoloader resolves
-`Symfony\Component\Mailer\*` first and 5.4 is what the code actually runs against. Declaring `^6.4`
-would resolve cleanly in Composer and then break at runtime, which is the worst of both.
+The constraint is `^5.4|^6.4|^7.0`, and 5.4 is not there by accident or generosity. **This package
+runs inside host applications that bundle `symfony/mailer` and `symfony/mime` themselves, at 5.4.**
+An extension to such a host installs its own `vendor/` alongside the host's, and the host's
+autoloader resolves `Symfony\Component\Mailer\*` first — so whatever the extension declares, 5.4 is
+what the code actually runs against. Declaring `^6.4` would resolve cleanly in Composer and then
+break at runtime, which is the worst of both.
+
+**Do not raise the floor without first establishing that those consumers are gone.** It resolves,
+the suite passes, and it breaks only in somebody else's production.
 
 Consequences when writing code here:
 
@@ -59,7 +63,7 @@ Consequences when writing code here:
   post-5.4 — read the prepared headers instead, as `EmailConverter` does.
 - **Check a new call against 5.4 before using it** — against a real `symfony/mime` 5.4 checkout,
   not the API docs, which document the current version. `composer update --with="symfony/mime:^5.4"
-  --prefer-lowest` gets you one; a XenForo 2.3 install has the exact copy the add-on runs on.
+  --prefer-lowest` gets you one.
 
 ## Architecture
 

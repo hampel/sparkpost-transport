@@ -147,8 +147,8 @@ final class EmailConverter
     {
         // Read everything off the prepared headers rather than the part's own getters.
         // getDisposition(), getName() and getFilename() were all added after Symfony 5.4,
-        // which is the version XenForo ships, and getPreparedHeaders() carries the same
-        // facts in every version this package supports.
+        // which is this package's floor, and getPreparedHeaders() carries the same facts in
+        // every version it supports.
         $headers = $part->getPreparedHeaders();
 
         $type = $headers->get('Content-Type');
