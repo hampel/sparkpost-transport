@@ -1,5 +1,6 @@
 vendor/
 composer.lock
+CLAUDE.local.md
 .idea/
 .phpunit.cache/
 .php-cs-fixer.cache
