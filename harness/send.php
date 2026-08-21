@@ -11,7 +11,15 @@
  * Set SPARKPOST_SINK=1 to route it through SinkEnvelopeListener instead, which SparkPost
  * accepts and discards. That exercises everything except the last hop.
  *
- * Needs SPARKPOST_API_KEY, SPARKPOST_TO, SPARKPOST_FROM.
+ * Set SPARKPOST_RETURN_PATH to exercise the envelope FROM, which the suite cannot settle
+ * either. It is a different address from the header From, and the difference is the point:
+ * the envelope address is where bounces are delivered and what the receiver runs SPF
+ * against, while the header From is what the reader sees and what DMARC aligns against. A
+ * bounce domain that is not verified on the account is refused; one that is verified but
+ * not aligned passes SPF and still fails DMARC. Both verdicts are reached on somebody
+ * else's mail server, so no amount of unit testing reaches them.
+ *
+ * Needs SPARKPOST_API_KEY, SPARKPOST_TO, SPARKPOST_FROM. SPARKPOST_RETURN_PATH is optional.
  *
  * @var Hampel\Rig\Io $io
  */
@@ -20,10 +28,12 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\HttpFactory;
 use Hampel\SparkPost\Config;
 use Hampel\SparkPost\SparkPost;
+use Hampel\SparkPost\Transport\EmailConverter;
 use Hampel\SparkPost\Transport\EventListener\SinkEnvelopeListener;
 use Hampel\SparkPost\Transport\Mime\SparkPostEmail;
 use Hampel\SparkPost\Transport\SparkPostTransport;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mime\Address;
 
@@ -48,6 +58,8 @@ $sink = getenv('SPARKPOST_SINK') === '1';
 // see .env.example for the error you get when it does not.
 $sandbox = str_ends_with(strtolower($from), '@sparkpostbox.com');
 
+$returnPath = getenv('SPARKPOST_RETURN_PATH') ?: null;
+
 $factory = new HttpFactory();
 $sparkpost = new SparkPost(Config::forRegion($key, getenv('SPARKPOST_REGION') ?: null), new Client(), $factory, $factory);
 
@@ -67,10 +79,22 @@ $io->line();
 $email = (new SparkPostEmail())
     ->setCampaignId('rig-send')
     ->setTransactional()
+    // Off so the delivered message is the one the converter built. Click tracking rewrites
+    // every link through SparkPost's domain and open tracking appends a pixel, which is
+    // noise when the point is to read the headers that came out the far end.
+    ->setOpenTracking(false)
+    ->setClickTracking(false)
     ->setMetadata(['source' => 'rig']);
 
 if ($sandbox) {
     $email->setSandbox();
+}
+
+// setSparkPostReturnPath(), not Email::returnPath(). The latter sets the MIME header and
+// leaves the account's default bounce domain on the envelope - a mistake SparkPost accepts
+// in silence, which is why the payload is printed below rather than the variable.
+if ($returnPath !== null) {
+    $email->setSparkPostReturnPath($returnPath);
 }
 
 $email
@@ -79,6 +103,18 @@ $email
     ->subject('hampel/sparkpost-transport · rig send')
     ->text('Sent by vendor/bin/rig send, through the SparkPost transport.')
     ->html('<p>Sent by <code>vendor/bin/rig send</code>, through the SparkPost transport.</p>');
+
+// What the converter actually built. Printed from the payload rather than the variables,
+// because where return_path lands is the part worth seeing: it is a top-level field, not
+// one of the options, and putting it under options is a mistake SparkPost accepts in
+// silence - a 200, a delivered message, and the default bounce domain still on the
+// envelope. This is the same converter the transport uses; only the envelope recipients
+// differ, since no listener has rewritten them yet.
+$payload = (new EmailConverter())->convert($email, Envelope::create($email))->toArray();
+
+$io->value('options', $payload['options'] ?? []);
+$io->value('return_path', $payload['return_path'] ?? '(not in the payload)');
+$io->line();
 
 try {
     // Through the transport rather than Mailer: MailerInterface::send() returns void, so
@@ -96,3 +132,34 @@ try {
 $io->success('✓ sent');
 $io->value('transmission', $sent?->getMessageId());
 $io->value('debug', $sent?->getDebug());
+
+if ($returnPath !== null) {
+    $io->line();
+    // Acceptance proves nothing about the bounce domain. Observed 21 August 2026: a sink
+    // send with return_path bounces@example.org, a domain nobody here owns, came back 200
+    // with 1 accepted. Whatever SparkPost validates, it is not this, at least not here.
+    $io->info('SparkPost took the return path. That is not proof the domain is verified -');
+    $io->info('an unverified one is accepted too. It is decided at the far end, so read the');
+    $io->info('delivered message:');
+    $io->line('  Return-Path:                   the envelope address, and where a bounce would go');
+    $io->line('  Authentication-Results: spf    authenticates the envelope domain, not the From');
+    $io->line('  Authentication-Results: dmarc  passes only if SPF or DKIM aligns with the From');
+    $io->line();
+    $envelopeDomain = substr(strrchr($returnPath, '@') ?: '@', 1);
+    $fromDomain = substr(strrchr($from, '@') ?: '@', 1);
+
+    if (strcasecmp($envelopeDomain, $fromDomain) === 0) {
+        $io->success(sprintf('Envelope and From are both on %s, so SPF alignment is satisfied.', $fromDomain));
+    } else {
+        $io->warn(sprintf('Envelope is on %s and From is on %s: SPF authenticates but does', $envelopeDomain, $fromDomain));
+        $io->warn('not align. DMARC then rests entirely on DKIM, which SparkPost signs with');
+        $io->warn('the From domain when that domain is configured for it - so check the');
+        $io->warn('dmarc= verdict in the delivered message rather than assuming either way.');
+    }
+}
+
+if ($sink) {
+    $io->line();
+    $io->warn('Sink: nothing was delivered, so there is no message to read the headers of.');
+    $io->warn('Run without SPARKPOST_SINK=1 to check DMARC.');
+}
