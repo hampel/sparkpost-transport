@@ -52,6 +52,26 @@ final class SparkPostEmailTest extends TestCase
         $this->assertSame(['first_name' => 'Alice'], $restored->getSubstitutionData());
     }
 
+    /**
+     * The associative payload is what lets an old serialised message still unserialise
+     * after a property is added. The same tolerance has to hold for a payload whose values
+     * are the wrong shape - a queued message must not fatal in the worker.
+     */
+    public function test_a_payload_carrying_the_wrong_shape_falls_back_rather_than_failing(): void
+    {
+        $data = $this->email()->setMetadata(['user_id' => 7])->__serialize();
+
+        $this->assertIsArray($data[0]);
+        $data[0]['metadata'] = 'not an array';
+        $data[0]['campaign_id'] = ['not a string'];
+
+        $restored = new SparkPostEmail();
+        $restored->__unserialize($data);
+
+        $this->assertSame([], $restored->getMetadata());
+        $this->assertNull($restored->getCampaignId());
+    }
+
     public function test_the_message_itself_survives_the_round_trip(): void
     {
         $restored = unserialize(serialize($this->email()->setCampaignId('spring')));

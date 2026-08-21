@@ -7,8 +7,13 @@ namespace Hampel\SparkPost\Transport\Tests;
 use Hampel\SparkPost\Config;
 use Hampel\SparkPost\SparkPost;
 use Hampel\SparkPost\Transport\SparkPostTransport;
+use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
+use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\Header\Headers;
+use Symfony\Component\Mime\Message;
+use Symfony\Component\Mime\RawMessage;
 
 final class SparkPostTransportTest extends TestCase
 {
@@ -109,6 +114,40 @@ final class SparkPostTransportTest extends TestCase
      * A consumer of a Symfony transport catches TransportExceptionInterface. Anything
      * else - a Guzzle exception, this package's own - slips straight past them.
      */
+    /**
+     * The two ways a message can fail to be an Email before anything is sent. Both have
+     * to leave as a TransportException like every other failure: a consumer catches
+     * TransportExceptionInterface and nothing else, so anything that slips past is a send
+     * that fails silently in their application.
+     */
+    public function test_a_message_that_is_not_mime_at_all_is_a_transport_exception(): void
+    {
+        $envelope = new Envelope(new Address('webmaster@example.com'), [new Address('alice@example.com')]);
+
+        $this->expectException(TransportExceptionInterface::class);
+        $this->expectExceptionMessage('it is not a MIME message');
+
+        $this->transport()->send(new RawMessage('not mime'), $envelope);
+    }
+
+    public function test_a_message_the_mime_component_cannot_convert_is_a_transport_exception(): void
+    {
+        // MessageConverter::toEmail() throws its own RuntimeException for a Message it
+        // cannot reduce to an Email - here one with no body at all. The headers still have
+        // to be valid: SentMessage's constructor calls ensureValidity() before doSend()
+        // ever runs, so a message that is invalid fails earlier and somewhere else.
+        $headers = (new Headers())
+            ->addMailboxListHeader('From', ['webmaster@example.com'])
+            ->addMailboxListHeader('To', ['alice@example.com']);
+
+        $envelope = new Envelope(new Address('webmaster@example.com'), [new Address('alice@example.com')]);
+
+        $this->expectException(TransportExceptionInterface::class);
+        $this->expectExceptionMessage('too complex');
+
+        $this->transport()->send(new Message($headers), $envelope);
+    }
+
     public function test_a_transport_failure_also_arrives_as_a_transport_exception(): void
     {
         $factory = new \GuzzleHttp\Psr7\HttpFactory();

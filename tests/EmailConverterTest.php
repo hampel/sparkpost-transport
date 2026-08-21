@@ -20,6 +20,23 @@ final class EmailConverterTest extends TestCase
         return (new EmailConverter())->convert($email, $envelope ?? Envelope::create($email))->toArray();
     }
 
+    /**
+     * @return resource
+     */
+    private function stream(string $contents)
+    {
+        $stream = fopen('php://memory', 'r+');
+
+        if ($stream === false) {
+            self::fail('could not open a memory stream');
+        }
+
+        fwrite($stream, $contents);
+        rewind($stream);
+
+        return $stream;
+    }
+
     private function email(): Email
     {
         return (new Email())
@@ -37,6 +54,22 @@ final class EmailConverterTest extends TestCase
         $this->assertSame('Hello', self::path($payload, 'content.subject'));
         $this->assertSame('Body.', self::path($payload, 'content.text'));
         $this->assertSame('<p>Body.</p>', self::path($payload, 'content.html'));
+    }
+
+    /**
+     * Symfony hands back the stream rather than a string when a body was set from one, and
+     * a stream posted to SparkPost as-is would be "Resource id #5" rather than the message.
+     */
+    public function test_a_body_set_from_a_stream_is_read_before_it_is_sent(): void
+    {
+        $email = $this->email()
+            ->text($this->stream('Streamed body.'))
+            ->html($this->stream('<p>Streamed body.</p>'));
+
+        $payload = $this->convert($email);
+
+        $this->assertSame('Streamed body.', self::path($payload, 'content.text'));
+        $this->assertSame('<p>Streamed body.</p>', self::path($payload, 'content.html'));
     }
 
     public function test_from_falls_back_to_the_envelope_sender(): void
