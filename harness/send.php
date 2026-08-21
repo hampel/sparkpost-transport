@@ -42,6 +42,12 @@ if ($key === false || $key === '' || $to === false || $to === '' || $from === fa
 
 $sink = getenv('SPARKPOST_SINK') === '1';
 
+// sparkpostbox.com is SparkPost's sandbox domain, which lets someone without a verified
+// sending domain run this at all - but only when the transmission carries the sandbox
+// option, so set it to match the From. Not every account has the sandbox domain enabled;
+// see .env.example for the error you get when it does not.
+$sandbox = str_ends_with(strtolower($from), '@sparkpostbox.com');
+
 $factory = new HttpFactory();
 $sparkpost = new SparkPost(Config::forRegion($key, getenv('SPARKPOST_REGION') ?: null), new Client(), $factory, $factory);
 
@@ -55,12 +61,17 @@ $transport = new SparkPostTransport($sparkpost, null, $dispatcher);
 
 $io->value('transport', (string) $transport);
 $io->value('sink', $sink ? 'yes - nothing will be delivered' : 'no');
+$io->value('sandbox', $sandbox ? 'yes - sparkpostbox.com, limited to a few messages' : 'no');
 $io->line();
 
 $email = (new SparkPostEmail())
     ->setCampaignId('rig-send')
     ->setTransactional()
     ->setMetadata(['source' => 'rig']);
+
+if ($sandbox) {
+    $email->setSandbox();
+}
 
 $email
     ->from(new Address($from, 'Rig'))

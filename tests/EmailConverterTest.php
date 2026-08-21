@@ -166,6 +166,7 @@ final class EmailConverterTest extends TestCase
             ->setTransactional()
             ->setOpenTracking(false)
             ->setClickTracking(false)
+            ->setSandbox()
             ->setMetadata(['user_id' => 7])
             ->setSubstitutionData(['first_name' => 'Alice'])
             ->setOptions(['ip_pool' => 'marketing']);
@@ -180,7 +181,7 @@ final class EmailConverterTest extends TestCase
         $this->assertSame(['user_id' => 7], self::path($payload, 'metadata'));
         $this->assertSame(['first_name' => 'Alice'], self::path($payload, 'substitution_data'));
         $this->assertSame(
-            ['open_tracking' => false, 'click_tracking' => false, 'transactional' => true, 'ip_pool' => 'marketing'],
+            ['open_tracking' => false, 'click_tracking' => false, 'transactional' => true, 'sandbox' => true, 'ip_pool' => 'marketing'],
             self::path($payload, 'options')
         );
     }
