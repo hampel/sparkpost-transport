@@ -135,11 +135,14 @@ $io->value('debug', $sent?->getDebug());
 
 if ($returnPath !== null) {
     $io->line();
-    // Acceptance proves nothing about the bounce domain. Observed 21 August 2026: a sink
-    // send with return_path bounces@example.org, a domain nobody here owns, came back 200
-    // with 1 accepted. Whatever SparkPost validates, it is not this, at least not here.
-    $io->info('SparkPost took the return path. That is not proof the domain is verified -');
-    $io->info('an unverified one is accepted too. It is decided at the far end, so read the');
+    // SparkPost polices the From and not the return path, which is the asymmetry that
+    // makes "it validates sender domains" plausible and wrong. Established 21-22 August
+    // 2026 across both packages: a From outside the configured sending domains is refused
+    // at the API; a return path on a domain nobody owns came back 200 with 1 accepted, and
+    // that message then never arrived.
+    $io->info('SparkPost checks the From against your sending domains. It does not check');
+    $io->info('this - a 200 means the payload was well formed and nothing more, so a bogus');
+    $io->info('return path is taken and the mail then quietly fails to arrive. Read the');
     $io->info('delivered message:');
     $io->line('  Return-Path:                   the envelope address, and where a bounce would go');
     $io->line('  Authentication-Results: spf    authenticates the envelope domain, not the From');
