@@ -17,12 +17,15 @@ package, and the dependency only ever points that way.
 ```bash
 composer install
 composer check                                  # lint, analyse, test - what CI runs
-vendor/bin/phpunit --filter test_name           # one test
+composer lint / format / analyse / test         # the same steps individually
+vendor/bin/phpunit --filter test_name           # one test (methods are snake_case)
 
 # the corners CI covers
 composer update --with="symfony/mailer:^5.4" --with="symfony/mime:^5.4" --prefer-lowest
 composer update --with="symfony/mailer:^7.0" --with="symfony/mime:^7.0"
 ```
+
+PHPStan runs at **level 10** over `src` and `tests`.
 
 **`composer.json` carries a path repository pointing at `../sparkpost`**, plus
 `minimum-stability: dev`, because the API package is not on Packagist yet. Both come out, and the
@@ -44,7 +47,7 @@ would resolve cleanly in Composer and then break at runtime, which is the worst 
 Consequences when writing code here:
 
 - **Only use API present in all three.** `Email::addPart()` arrived in 6.2 and
-  `Email::attachPart()` went in 7.0; `attach()` and `embed()` are in every one, which is why the
+  `Email::attachPart()` replaced it in 7.0; `attach()` and `embed()` are in every one, which is why the
   tests use those. `TextPart::getDisposition()`, `getName()` and `DataPart::getFilename()` are all
   post-5.4 — read the prepared headers instead, as `EmailConverter` does.
 - **Check a new call against 5.4 before using it**, in
@@ -83,6 +86,53 @@ generates one, which is a tempting but wrong thing to branch on.
 A consumer of a Symfony transport catches `TransportExceptionInterface`. The API package's
 exceptions, and the Mime component's, are not that — so `doSend()` wraps both. Keep it that way:
 an exception that slips past is a send that fails silently in every application using this.
+
+### HTTP 200 is not a successful send
+
+SparkPost answers `200` having accepted zero recipients — every address suppressed or invalid —
+and the transport this replaces called that a success, so the mail simply vanished. `doSend()`
+reads the counts off the result, and the three outcomes are deliberately different:
+
+| result | what happens |
+|---|---|
+| nobody accepted | `TransportException` — nothing was sent |
+| some accepted, some rejected | `warning` on the logger, and the send succeeds |
+| all accepted | success |
+
+The middle row is the one to leave alone. Raising there would tell the caller the whole send
+failed, and the retry would deliver twice to everyone who already had it.
+
+The transmission id becomes the message id, and the counts go into `appendDebug()`, so a caller
+can match a send against SparkPost's message events.
+
+## Tests
+
+`StubClient` is a PSR-18 client answering from a queue and recording what it was asked, so the
+suite needs no network and no Guzzle mock handler — PSR-18 is a one-method interface, and the seam
+the package exposes to consumers is the same one the tests drive it through. Guzzle is a dev
+dependency only for its PSR-7 objects.
+
+`TestCase` carries the vocabulary: `transport()` builds one around the stub, `queueAccepted()`
+queues a plausible SparkPost response, and `sentTransmission()` returns the decoded payload that
+was actually posted, which `path()` and `arrayAt()` then read by dotted path. A converter test
+asserts against that payload rather than against `Transmission`'s getters — what matters is the
+JSON SparkPost receives.
+
+## The rig harness
+
+`harness/send.php` drives the whole stack against the live API — Email, Mailer, transport, API
+client, real HTTP. The suite proves the payload is built correctly against a stub; it cannot say
+whether SparkPost accepts what Symfony produces, which is the question left before a release.
+
+```bash
+cp .env.example .env            # SPARKPOST_API_KEY, _TO, _FROM; _SINK=1 to route to the sink
+vendor/bin/rig                  # list exercises
+vendor/bin/rig send             # run it
+```
+
+`.env` and `.env.*` are gitignored (`.env.example` is not). `hampel/rig` has no dependencies by
+design — a harness that pulled a framework in would put classes where PHPStan can see them and
+hide a dependency this package never declared.
 
 ## SparkPostEmail and serialisation
 
