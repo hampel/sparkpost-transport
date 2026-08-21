@@ -116,9 +116,17 @@ reaching anyone:
 
 ```php
 use Hampel\SparkPost\Transport\EventListener\SinkEnvelopeListener;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
+$dispatcher = new EventDispatcher();
 $dispatcher->addSubscriber(new SinkEnvelopeListener());
+
+$transport = new SparkPostTransport($sparkpost, $dispatcher);
 ```
+
+The dispatcher has to reach the transport, which is what invokes the listener. A listener
+added to a dispatcher the transport never received does nothing, and the mail is delivered
+normally.
 
 It rewrites the envelope and leaves the headers alone, so the delivered message still reads
 as though it were addressed normally.
