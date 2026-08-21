@@ -6,10 +6,10 @@
 [![Open Issues](https://img.shields.io/github/issues-raw/hampel/sparkpost-transport.svg?style=flat-square)](https://github.com/hampel/sparkpost-transport/issues)
 [![License](https://img.shields.io/packagist/l/hampel/sparkpost-transport.svg?style=flat-square)](https://packagist.org/packages/hampel/sparkpost-transport)
 
-By [Simon Hampel](mailto:simon@hampelgroup.com)
-
 Sends Symfony Mailer messages through the SparkPost transmissions API, using
 [`hampel/sparkpost`](https://github.com/hampel/sparkpost) to do the talking.
+
+By [Simon Hampel](mailto:simon@hampelgroup.com)
 
 ## Installation
 
