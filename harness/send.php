@@ -1,12 +1,12 @@
 <?php
 
 /**
- * Exercise: send a real message through Symfony Mailer and the SparkPost transport.
+ * Exercise: send a real message through the SparkPost transport.
  *
  * The suite proves the payload is built correctly against a stub client. It cannot tell
  * you whether SparkPost accepts what Symfony produces, which is the only question left
- * before a release - so this drives the whole stack: Email, Mailer, transport, API client,
- * real HTTP.
+ * before a release - so this drives the whole stack: Email, transport, API client, real
+ * HTTP.
  *
  * Set SPARKPOST_SINK=1 to route it through SinkEnvelopeListener instead, which SparkPost
  * accepts and discards. That exercises everything except the last hop.
@@ -25,7 +25,7 @@ use Hampel\SparkPost\Transport\Mime\SparkPostEmail;
 use Hampel\SparkPost\Transport\SparkPostTransport;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
-use Symfony\Component\Mailer\Mailer;
+use Symfony\Component\Mime\Address;
 
 $io->title('sparkpost-transport · send');
 
@@ -63,14 +63,17 @@ $email = (new SparkPostEmail())
     ->setMetadata(['source' => 'rig']);
 
 $email
-    ->from($from, 'Rig')
+    ->from(new Address($from, 'Rig'))
     ->to($to)
     ->subject('hampel/sparkpost-transport · rig send')
-    ->text('Sent by vendor/bin/rig send, through Symfony Mailer.')
-    ->html('<p>Sent by <code>vendor/bin/rig send</code>, through Symfony Mailer.</p>');
+    ->text('Sent by vendor/bin/rig send, through the SparkPost transport.')
+    ->html('<p>Sent by <code>vendor/bin/rig send</code>, through the SparkPost transport.</p>');
 
 try {
-    $sent = (new Mailer($transport))->send($email);
+    // Through the transport rather than Mailer: MailerInterface::send() returns void, so
+    // the SentMessage - and with it the transmission id - is only available here. The
+    // transport dispatches the MessageEvent itself, so the sink listener still runs.
+    $sent = $transport->send($email);
 } catch (TransportExceptionInterface $e) {
     $io->error('✗ ' . $e::class);
     $io->value('message', $e->getMessage());
