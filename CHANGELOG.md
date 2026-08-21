@@ -1,12 +1,14 @@
 CHANGELOG
 =========
 
-Unreleased
-----------
+0.1.0 (2026-08-21)
+------------------
 
 * initial development - the Symfony Mailer transport, Email to Transmission conversion,
-  SparkPostEmail and the sink envelope listener, with a rig exercise that drives a real
-  send through the live API
-* requires hampel/sparkpost ^0.1.0, published to Packagist on 21 August 2026, and
-  symfony/mailer and symfony/mime at ^5.4|^6.4|^7.0 - 5.4 because that is what XenForo 2.3
-  bundles and a XenForo add-on cannot substitute its own
+  SparkPostEmail and the sink envelope listener, with rig exercises that drive real sends
+  through the live API
+* a transmission SparkPost accepts with no accepted recipients is a failed send
+* every recipient receives the same To: line, Cc is visible, and Bcc appears in no header
+* SparkPostEmail carries campaign, description, return path, tracking, sandbox, metadata
+  and substitution data, and survives serialisation
+* requires hampel/sparkpost ^0.1.0, symfony/mailer and symfony/mime ^5.4|^6.4|^7.0
