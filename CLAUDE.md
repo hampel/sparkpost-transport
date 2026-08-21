@@ -138,7 +138,8 @@ client, real HTTP. The suite proves the payload is built correctly against a stu
 whether SparkPost accepts what Symfony produces, which is the question left before a release.
 
 ```bash
-cp .env.example .env            # SPARKPOST_API_KEY, _TO, _FROM; _SINK=1 to route to the sink
+cp .env.example .env            # SPARKPOST_API_KEY, _TO, _FROM
+                                # sink by default; SPARKPOST_DELIVER=1 sends for real
 vendor/bin/rig                  # list exercises
 vendor/bin/rig send             # run it
 ```

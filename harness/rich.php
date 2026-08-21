@@ -23,9 +23,9 @@
  * Recipients default to plus-addressed variants of SPARKPOST_TO so one inbox receives all
  * three; set SPARKPOST_CC and SPARKPOST_BCC to use real separate addresses.
  *
- * Needs SPARKPOST_API_KEY, SPARKPOST_TO, SPARKPOST_FROM. SPARKPOST_SINK=1 routes it to the
- * sink, which proves the payload builds and delivers nothing - so it answers none of the
- * questions above.
+ * Needs SPARKPOST_API_KEY, SPARKPOST_TO, SPARKPOST_FROM. Without SPARKPOST_DELIVER=1 it
+ * goes to the sink, which proves the payload builds and delivers nothing - so it answers
+ * none of the questions above.
  *
  * @var Hampel\Rig\Io $io
  */
@@ -75,14 +75,15 @@ $plus = static function (string $address, string $tag) use ($io): string {
 $cc = getenv('SPARKPOST_CC') ?: $plus($to, 'cc');
 $bcc = getenv('SPARKPOST_BCC') ?: $plus($to, 'bcc');
 
-$sink = getenv('SPARKPOST_SINK') === '1';
+// Exactly '1' - see send.php.
+$deliver = getenv('SPARKPOST_DELIVER') === '1';
 
 $factory = new HttpFactory();
 $sparkpost = new SparkPost(Config::forRegion($key, getenv('SPARKPOST_REGION') ?: null), new Client(), $factory, $factory);
 
 $dispatcher = new EventDispatcher();
 
-if ($sink) {
+if (! $deliver) {
     $dispatcher->addSubscriber(new SinkEnvelopeListener());
 }
 
@@ -91,7 +92,7 @@ $transport = new SparkPostTransport($sparkpost, $dispatcher);
 $io->value('to', $to);
 $io->value('cc', $cc);
 $io->value('bcc', $bcc);
-$io->value('sink', $sink ? 'yes - nothing will be delivered' : 'no');
+$io->value('mode', $deliver ? 'DELIVER - these go to real addresses' : 'sink - nothing will be delivered');
 $io->line();
 
 // A 160x80 PNG, checkerboard with a border, so a broken reference is obvious at a glance.
@@ -172,10 +173,11 @@ $io->success('✓ sent');
 $io->value('transmission', $sent?->getMessageId());
 $io->value('debug', $sent?->getDebug());
 
-if ($sink) {
+if (! $deliver) {
     $io->line();
-    $io->warn('Sink: nothing was delivered, so none of the questions above are answered.');
-    $io->warn('Run without SPARKPOST_SINK=1 and read the three messages.');
+    $io->warn('Sink: the payload above is real, but nothing was delivered, so none of the');
+    $io->warn('questions this exercise exists to ask are answered. Run it with');
+    $io->warn('SPARKPOST_DELIVER=1 and read the three messages.');
 
     return;
 }

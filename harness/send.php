@@ -8,8 +8,11 @@
  * before a release - so this drives the whole stack: Email, transport, API client, real
  * HTTP.
  *
- * Set SPARKPOST_SINK=1 to route it through SinkEnvelopeListener instead, which SparkPost
- * accepts and discards. That exercises everything except the last hop.
+ * It sends nothing to a real address unless told to. Without SPARKPOST_DELIVER=1 every
+ * recipient goes through SinkEnvelopeListener to SparkPost's sink, which accepts, counts
+ * and discards it - everything except the last hop. Delivering is the deliberate act,
+ * because the session that does not know a populated .env is sitting here is exactly the
+ * session that will not know about a flag either.
  *
  * Set SPARKPOST_RETURN_PATH to exercise the envelope FROM, which the suite cannot settle
  * either. It is a different address from the header From, and the difference is the point:
@@ -50,7 +53,10 @@ if ($key === false || $key === '' || $to === false || $to === '' || $from === fa
     exit(1);
 }
 
-$sink = getenv('SPARKPOST_SINK') === '1';
+// Exactly '1'. An environment variable is always a string, so a loose test would make
+// SPARKPOST_DELIVER=0 mean deliver. rig skips any key already in the process environment
+// (Environment.php:41), so SPARKPOST_DELIVER=1 on the command line beats the .env file.
+$deliver = getenv('SPARKPOST_DELIVER') === '1';
 
 // sparkpostbox.com is SparkPost's sandbox domain, which lets someone without a verified
 // sending domain run this at all - but only when the transmission carries the sandbox
@@ -65,14 +71,14 @@ $sparkpost = new SparkPost(Config::forRegion($key, getenv('SPARKPOST_REGION') ?:
 
 $dispatcher = new EventDispatcher();
 
-if ($sink) {
+if (! $deliver) {
     $dispatcher->addSubscriber(new SinkEnvelopeListener());
 }
 
 $transport = new SparkPostTransport($sparkpost, $dispatcher);
 
 $io->value('transport', (string) $transport);
-$io->value('sink', $sink ? 'yes - nothing will be delivered' : 'no');
+$io->value('mode', $deliver ? 'DELIVER - this goes to a real address' : 'sink - nothing will be delivered');
 $io->value('sandbox', $sandbox ? 'yes - sparkpostbox.com, limited to a few messages' : 'no');
 $io->line();
 
@@ -161,8 +167,9 @@ if ($returnPath !== null) {
     }
 }
 
-if ($sink) {
+if (! $deliver) {
     $io->line();
-    $io->warn('Sink: nothing was delivered, so there is no message to read the headers of.');
-    $io->warn('Run without SPARKPOST_SINK=1 to check DMARC.');
+    $io->warn('Sink: everything above is real, but nothing was delivered, so there is no');
+    $io->warn('message to read the headers of. SPARKPOST_DELIVER=1 answers delivery,');
+    $io->warn('Return-Path and DMARC.');
 }
