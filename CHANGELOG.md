@@ -1,7 +1,7 @@
 CHANGELOG
 =========
 
-0.1.0 (2026-08-21)
+0.1.0 (2026-08-22)
 ------------------
 
 * initial development - the Symfony Mailer transport, Email to Transmission conversion,
