@@ -53,8 +53,8 @@ $mailer->send(
 ## HTTP 200 is not a successful send
 
 SparkPost answers `200` having accepted zero recipients — a suppressed address, an invalid
-one — and the transport this replaces reported that as a successful send. Here it is a
-failure:
+one. A transport that reads only the status code reports that as a successful send. Here it
+is a failure:
 
 - **Nobody accepted** → `TransportException`. Nothing was sent, and you will hear about it.
 - **Some accepted, some rejected** → a `warning` on the logger, and the send succeeds.

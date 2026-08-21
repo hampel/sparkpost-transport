@@ -20,14 +20,14 @@ use Symfony\Component\Mime\MessageConverter;
 /**
  * A Symfony Mailer transport that sends through the SparkPost transmissions API.
  *
- * Two things distinguish it from the transport it replaces.
+ * Two things are worth knowing about it.
  *
  * It owns no HTTP code: hampel/sparkpost does the talking, so the client is whatever the
  * host application injected there, and this class is only a translation layer.
  *
  * And it checks what SparkPost said. A transmission can come back HTTP 200 having
- * accepted no recipients at all, which the previous implementation reported as a
- * successful send - the mail simply vanished. Here that is a failure.
+ * accepted no recipients at all; read only the status code and that looks like a
+ * successful send while the mail simply vanishes. Here it is a failure.
  */
 final class SparkPostTransport extends AbstractTransport
 {

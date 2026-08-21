@@ -63,7 +63,7 @@ final class SparkPostTransportTest extends TestCase
 
     /**
      * The defect this package exists to fix. SparkPost answers 200 having accepted
-     * nobody, and the transport it replaces reported that as a successful send.
+     * nobody, and reading only the status code reports that as a successful send.
      */
     public function test_a_200_that_accepted_nobody_is_a_failed_send(): void
     {

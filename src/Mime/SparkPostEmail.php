@@ -236,8 +236,8 @@ class SparkPostEmail extends Email
     /**
      * Serialisation for Symfony Messenger, which is how a queued message survives.
      *
-     * Deliberately an associative array rather than the positional one this replaces: a
-     * positional list has to be kept in lockstep with __unserialize(), and a property
+     * Deliberately an associative array rather than a positional one: a positional
+     * list has to be kept in lockstep with __unserialize(), and a property
      * left out of either vanishes silently the next time a message is queued. With keys,
      * adding a property is one line and an old payload still unserialises.
      *

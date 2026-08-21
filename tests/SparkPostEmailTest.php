@@ -20,8 +20,8 @@ final class SparkPostEmailTest extends TestCase
     /**
      * The failure this guards against is silent: a message queued through Symfony
      * Messenger is serialised, and anything the round trip drops simply is not there when
-     * the worker sends it. The implementation this replaces used a positional array, so
-     * adding a property without touching both methods lost it.
+     * the worker sends it. A positional payload loses a property whenever one is added
+     * without touching both methods, which is why this one is keyed.
      */
     public function test_every_sparkpost_field_survives_a_round_trip(): void
     {

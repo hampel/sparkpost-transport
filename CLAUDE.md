@@ -7,10 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `hampel/sparkpost-transport` — a Symfony Mailer transport for SparkPost, built on
 [`hampel/sparkpost`](https://github.com/hampel/sparkpost).
 
-Together the two replace `hampel/symfonymailer-sparkpost`. The split is the point: **this package
-owns no HTTP code**. It translates a Symfony `Email` into a SparkPost `Transmission` and hands it
-over. Anything about talking to the API — clients, retries, error taxonomy — belongs in the API
-package, and the dependency only ever points that way.
+The split between the two packages is the point: **this package owns no HTTP code**. It
+translates a Symfony `Email` into a SparkPost `Transmission` and hands it over. Anything about
+talking to the API — clients, retries, error taxonomy — belongs in the API package, and the
+dependency only ever points that way.
 
 ## Commands
 
@@ -101,9 +101,10 @@ an exception that slips past is a send that fails silently in every application 
 
 ### HTTP 200 is not a successful send
 
-SparkPost answers `200` having accepted zero recipients — every address suppressed or invalid —
-and the transport this replaces called that a success, so the mail simply vanished. `doSend()`
-reads the counts off the result, and the three outcomes are deliberately different:
+SparkPost answers `200` having accepted zero recipients — every address suppressed or invalid.
+A transport that reads only the status code calls that a success and the mail simply vanishes.
+`doSend()` reads the counts off the result instead, and the three outcomes are deliberately
+different:
 
 | result | what happens |
 |---|---|
@@ -148,9 +149,9 @@ hide a dependency this package never declared.
 
 ## SparkPostEmail and serialisation
 
-`__serialize()` uses an **associative** payload, unlike the positional array in the package this
-replaces. With a positional list the two methods have to be kept in lockstep, and a property left
-out of either vanishes silently the next time a message is queued through Messenger. With keys,
+`__serialize()` uses an **associative** payload rather than a positional array. With a positional
+list the two methods have to be kept in lockstep, and a property left out of either vanishes
+silently the next time a message is queued through Messenger. With keys,
 adding a property is one line and an old payload still unserialises.
 
 `SparkPostEmailTest` round-trips every field. Add a field, add it there.
