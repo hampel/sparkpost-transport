@@ -17,10 +17,17 @@
  * Set SPARKPOST_RETURN_PATH to exercise the envelope FROM, which the suite cannot settle
  * either. It is a different address from the header From, and the difference is the point:
  * the envelope address is where bounces are delivered and what the receiver runs SPF
- * against, while the header From is what the reader sees and what DMARC aligns against. A
- * bounce domain that is not verified on the account is refused; one that is verified but
- * not aligned passes SPF and still fails DMARC. Both verdicts are reached on somebody
- * else's mail server, so no amount of unit testing reaches them.
+ * against, while the header From is what the reader sees and what DMARC aligns against.
+ *
+ * SparkPost polices the From and not the return path. A From outside the configured sending
+ * domains is refused at the API with HTTP 400 "Unconfigured Sending Domain <domain>"; a
+ * return path is not checked at all, so an unverified bounce domain is accepted and the
+ * message then does not arrive. Verified but not aligned passes SPF and still fails DMARC.
+ * Every one of those verdicts is reached on somebody else's mail server, so no amount of
+ * unit testing reaches them.
+ *
+ * This exercise sets the return path the SparkPost-specific way. `rig envelope` sets the
+ * same field the ordinary Symfony way; the two are worth comparing.
  *
  * Needs SPARKPOST_API_KEY, SPARKPOST_TO, SPARKPOST_FROM. SPARKPOST_RETURN_PATH is optional.
  *
@@ -97,9 +104,9 @@ if ($sandbox) {
     $email->setSandbox();
 }
 
-// setSparkPostReturnPath(), not Email::returnPath(). The latter sets the MIME header and
-// leaves the account's default bounce domain on the envelope - a mistake SparkPost accepts
-// in silence, which is why the payload is printed below rather than the variable.
+// The SparkPost-specific setter, which is what this exercise is here to cover. Since 0.3.0
+// Email::returnPath() reaches the same field through the envelope - `rig envelope` does it
+// that way - and this one wins when both are set.
 if ($returnPath !== null) {
     $email->setSparkPostReturnPath($returnPath);
 }

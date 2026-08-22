@@ -155,16 +155,26 @@ JSON SparkPost receives.
 
 ## The rig harness
 
-`harness/send.php` drives the whole stack against the live API — Email, Mailer, transport, API
-client, real HTTP. The suite proves the payload is built correctly against a stub; it cannot say
-whether SparkPost accepts what Symfony produces, which is the question left before a release.
+The exercises drive the whole stack against the live API — Email, transport, API client, real
+HTTP. The suite proves the payload is built correctly against a stub; it cannot say whether
+SparkPost accepts what Symfony produces, or what a receiving mail server then does with it, and
+those are the questions left before a release.
 
 ```bash
 cp .env.example .env            # SPARKPOST_API_KEY, _TO, _FROM
                                 # sink by default; SPARKPOST_DELIVER=1 sends for real
 vendor/bin/rig                  # list exercises
-vendor/bin/rig send             # run it
+vendor/bin/rig send             # SparkPostEmail: campaign, metadata, the SparkPost return path
+vendor/bin/rig envelope         # a plain Email: Return-Path via the envelope sender
+vendor/bin/rig rich             # Cc, Bcc, an attachment and an inline image
 ```
+
+**`send` and `envelope` set the same field two different ways**, which is why both exist.
+`send` uses `SparkPostEmail::setSparkPostReturnPath()`; `envelope` uses `Email::returnPath()` on
+a plain Symfony message and relies on the envelope sender carrying it, which is what a framework's
+own mailer produces. `envelope` fails loudly if the payload does not match what was asked for, in
+either direction — it is the 0.3.0 regression test that cannot be written as a unit test, because
+only a delivered message proves the far end agrees.
 
 `.env` and `.env.*` are gitignored (`.env.example` is not). `hampel/rig` has no dependencies by
 design — a harness that pulled a framework in would put classes where PHPStan can see them and
