@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+0.3.0 (2026-08-23)
+------------------
+
+* the envelope sender is sent as the transmission return_path, so Email::returnPath() and
+  Email::sender() now reach SparkPost - previously both were discarded
+* a message setting a bounce domain that is not verified on the account is accepted by
+  SparkPost and not delivered
+* allow hampel/sparkpost ^0.2.0
+
 0.2.0 (2026-08-22)
 ------------------
 

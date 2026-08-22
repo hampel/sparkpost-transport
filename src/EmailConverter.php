@@ -80,6 +80,21 @@ final class EmailConverter
         $from = $email->getFrom()[0] ?? $envelope->getSender();
 
         $transmission->from($from->getAddress(), $from->getName());
+
+        // The sender half of the same rule the recipients follow: delivery comes from the
+        // envelope. Symfony resolves the envelope sender from Return-Path, then Sender, then
+        // From, and SparkPost's return_path is the same thing - the bounce address, and what
+        // a receiver runs SPF against.
+        //
+        // Only when it differs from the From, because that difference is the deliberate
+        // part. Equal means nobody asked for anything and Symfony fell back to the From;
+        // setting return_path to it anyway would move bounces off SparkPost's own bounce
+        // domain, which is where its bounce processing expects them.
+        $sender = $envelope->getSender();
+
+        if (strcasecmp($sender->getAddress(), $from->getAddress()) !== 0) {
+            $transmission->returnPath($sender->getAddress());
+        }
     }
 
     private function applyAddresses(Transmission $transmission, Email $email): void

@@ -125,6 +125,35 @@ $transport = new SparkPostTransport($sparkpost, null, null, new EmailConverter([
 Anything the message itself carries wins, so a single `SparkPostEmail` can still turn
 tracking back on without disturbing the default.
 
+## The bounce address
+
+SparkPost's `return_path` is the envelope sender: where a bounce is delivered, and the
+domain a receiver runs SPF against. It is a different thing from the `From:` a reader sees,
+and the difference is what DMARC alignment is about.
+
+Set it the ordinary Symfony way and it is used:
+
+```php
+$email->returnPath('bounces@example.com');   // or ->sender(...)
+```
+
+Nothing is sent when you set nothing, so SparkPost uses the account's own bounce domain —
+which is where its bounce processing expects mail, so leave it alone unless you have a
+verified custom bounce domain.
+
+Two things worth knowing before you rely on it:
+
+- **A custom bounce domain must be verified on the account.** SparkPost does not check it at
+  send time — the transmission is accepted either way — so a domain it cannot route produces
+  a `200`, and the message then does not arrive. It is the From that SparkPost polices, with
+  `HTTP 400 "Unconfigured Sending Domain <domain>"`.
+- **For DMARC to pass on the strength of SPF, this domain has to align with the `From:`.**
+  `bounces@example.com` against a From of `noreply@example.com` aligns; the same address
+  against a From on another domain authenticates and does not align.
+
+`SparkPostEmail::setSparkPostReturnPath()` sets the same field and wins over the envelope,
+for when a single message needs a different bounce address.
+
 ## Cc, Bcc, and what the recipient sees
 
 SparkPost sends one message per recipient, so a naive transport gives every recipient a

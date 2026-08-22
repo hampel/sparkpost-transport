@@ -86,6 +86,14 @@ that merely looks wrong.
 Note that `Envelope::setRecipients()` discards display names, because an envelope is SMTP-level.
 That is not a quirk to work around; it is why the To: line has to come from the headers.
 
+**The sender obeys the same rule, and it took until 0.3.0 to notice.** SparkPost's `return_path`
+is the envelope sender, and Symfony resolves that from Return-Path, then Sender, then From — so
+`applyFrom()` sets `return_path` whenever the envelope sender differs from the From. Equal means
+nobody asked and Symfony fell back; sending it anyway would move bounces off SparkPost's own bounce
+domain, where its processing expects them. Before that, `Email::returnPath()` was discarded in
+silence: the header is in the transmission builder's `DISALLOWED_HEADERS`, and nothing populated
+the top-level field except `SparkPostEmail`.
+
 ### Default options, and why the precedence falls out for free
 
 `EmailConverter` takes an array of transmission options applied to every message before

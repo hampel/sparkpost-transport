@@ -135,6 +135,52 @@ final class EmailConverterTest extends TestCase
         $this->assertSame('Bob <bob@example.com>', self::path($payload, 'content.headers.CC'));
     }
 
+    /**
+     * The sender half of "delivery follows the envelope". Symfony resolves the envelope
+     * sender from Return-Path, then Sender, then From, and SparkPost's return_path is the
+     * same thing - where a bounce goes, and what a receiver runs SPF against.
+     */
+    public function test_a_return_path_becomes_the_transmission_return_path(): void
+    {
+        $email = $this->email()->returnPath(new Address('bounces@example.com'));
+
+        $this->assertSame('bounces@example.com', self::path($this->convert($email), 'return_path'));
+    }
+
+    public function test_a_sender_becomes_the_return_path_too(): void
+    {
+        $email = $this->email()->sender(new Address('agent@example.com'));
+
+        $this->assertSame('agent@example.com', self::path($this->convert($email), 'return_path'));
+    }
+
+    /**
+     * Nobody asked for a bounce address, so none is sent. Setting it to the From would move
+     * bounces off SparkPost's own bounce domain, where its bounce processing expects them.
+     */
+    public function test_no_return_path_is_sent_when_it_would_only_repeat_the_from(): void
+    {
+        $this->assertNull(self::path($this->convert($this->email()), 'return_path'));
+    }
+
+    public function test_an_envelope_sender_set_by_a_listener_is_honoured(): void
+    {
+        $email = $this->email();
+
+        $envelope = new Envelope(new Address('bounces@example.com'), [new Address('alice@example.com')]);
+
+        $this->assertSame('bounces@example.com', self::path($this->convert($email, $envelope), 'return_path'));
+    }
+
+    public function test_a_sparkpost_return_path_wins_over_the_envelope(): void
+    {
+        $email = (new SparkPostEmail())->setSparkPostReturnPath('explicit@example.com');
+        $email->from('webmaster@example.com')->to('alice@example.com')->subject('Hi')->text('Body.')
+            ->returnPath(new Address('envelope@example.com'));
+
+        $this->assertSame('explicit@example.com', self::path($this->convert($email), 'return_path'));
+    }
+
     public function test_reply_to_is_a_formatted_list(): void
     {
         $payload = $this->convert(
