@@ -53,10 +53,11 @@ if ($key === false || $key === '' || $to === false || $to === '' || $from === fa
     exit(1);
 }
 
-// Exactly '1'. An environment variable is always a string, so a loose test would make
-// SPARKPOST_DELIVER=0 mean deliver. rig skips any key already in the process environment
-// (Environment.php:41), so SPARKPOST_DELIVER=1 on the command line beats the .env file.
-$deliver = getenv('SPARKPOST_DELIVER') === '1';
+require __DIR__ . '/lib/delivery.php';
+
+// Sink unless SPARKPOST_DELIVER=1, and refused outright for an agent session whatever the
+// .env says. See harness/lib/delivery.php for why the second gate exists.
+[$deliver, $mode] = rig_delivery();
 
 // sparkpostbox.com is SparkPost's sandbox domain, which lets someone without a verified
 // sending domain run this at all - but only when the transmission carries the sandbox
@@ -78,7 +79,7 @@ if (! $deliver) {
 $transport = new SparkPostTransport($sparkpost, $dispatcher);
 
 $io->value('transport', (string) $transport);
-$io->value('mode', $deliver ? 'DELIVER - this goes to a real address' : 'sink - nothing will be delivered');
+$io->value('mode', $mode);
 $io->value('sandbox', $sandbox ? 'yes - sparkpostbox.com, limited to a few messages' : 'no');
 $io->line();
 

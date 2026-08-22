@@ -162,6 +162,12 @@ vendor/bin/rig send             # run it
 design — a harness that pulled a framework in would put classes where PHPStan can see them and
 hide a dependency this package never declared.
 
+**An agent session cannot deliver.** `harness/lib/delivery.php` refuses when `CLAUDECODE` is set,
+whatever `.env` says, because the working copy normally *does* say `SPARKPOST_DELIVER=1` — that is
+how a human runs it. Without the second gate, a session that knows about the flag and believes the
+default is sink sends real mail, which has happened. Override deliberately with
+`SPARKPOST_AGENT_MAY_DELIVER=1` when Simon has asked for a real send.
+
 ## SparkPostEmail and serialisation
 
 `__serialize()` uses an **associative** payload rather than a positional array. With a positional
