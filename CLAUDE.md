@@ -176,6 +176,11 @@ own mailer produces. `envelope` fails loudly if the payload does not match what 
 either direction — it is the 0.3.0 regression test that cannot be written as a unit test, because
 only a delivered message proves the far end agrees.
 
+`envelope` also carries the converter defaults — `transactional`, `open_tracking`,
+`click_tracking` — for the same reason: they are the other thing a plain `Email` cannot say for
+itself, and they were unit-tested but had never been accepted by the live API. Its transport is
+built with the same converter the printed payload comes from, so what it shows is what it sent.
+
 `.env` and `.env.*` are gitignored (`.env.example` is not). `hampel/rig` has no dependencies by
 design — a harness that pulled a framework in would put classes where PHPStan can see them and
 hide a dependency this package never declared.

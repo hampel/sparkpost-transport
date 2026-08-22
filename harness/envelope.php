@@ -23,6 +23,12 @@
  * resolves either into the envelope sender, so both should produce the same payload - and
  * confirming that is the point of the switch.
  *
+ * It also covers the other thing a plain Email cannot say for itself. Tracking and
+ * transactional are per-message on a SparkPostEmail, but an application decides them once,
+ * and a framework's mailer builds an Email that has never heard of either - so they reach
+ * the transmission as converter defaults instead. The transport here is given the same
+ * converter the payload is built with, or the exercise would print defaults it did not send.
+ *
  * Without SPARKPOST_RETURN_PATH set there is no bounce address to send, and the exercise
  * shows the other half of the rule: no return_path in the payload, because the envelope
  * sender then merely repeats the From and sending it would move bounces off SparkPost's own
@@ -76,7 +82,21 @@ if (! $deliver) {
     $dispatcher->addSubscriber(new SinkEnvelopeListener());
 }
 
-$transport = new SparkPostTransport($sparkpost, $dispatcher);
+// The other half of what a plain Email cannot say for itself. A SparkPostEmail carries
+// tracking and transactional per message; an application usually wants them decided once,
+// and a framework's mailer builds an Email that has never heard of either. These reach the
+// transmission through the converter, so the transport has to be given the same instance
+// the payload below is built with - otherwise this exercise would print defaults it did not
+// actually send.
+$defaults = [
+    'transactional' => true,
+    'open_tracking' => false,
+    'click_tracking' => false,
+];
+
+$converter = new EmailConverter($defaults);
+
+$transport = new SparkPostTransport($sparkpost, $dispatcher, null, $converter);
 
 $io->value('mode', $mode);
 $io->value('set via', $returnPath === null
@@ -101,12 +121,23 @@ if ($returnPath !== null) {
 // Built the way the transport builds it. Envelope::create() is what resolves Return-Path or
 // Sender into the envelope sender, so this is where the whole mechanism shows.
 $envelope = Envelope::create($email);
-$payload = (new EmailConverter())->convert($email, $envelope)->toArray();
+$payload = $converter->convert($email, $envelope)->toArray();
 
 $io->value('header From', $from);
 $io->value('envelope sender', $envelope->getSender()->getAddress());
 $io->value('return_path', $payload['return_path'] ?? '(not in the payload)');
+$io->value('options', $payload['options'] ?? '(none)');
 $io->line();
+
+// Nothing on the Email asked for these, so if they are absent the defaults did not reach a
+// plain message - which is the whole reason the converter takes them.
+foreach ($defaults as $key => $expected) {
+    if (($payload['options'][$key] ?? null) !== $expected) {
+        $io->error(sprintf('✗ Default option %s did not reach the payload.', $key));
+
+        exit(1);
+    }
+}
 
 if ($returnPath === null && isset($payload['return_path'])) {
     $io->error('✗ A return_path was sent when nothing asked for one.');
