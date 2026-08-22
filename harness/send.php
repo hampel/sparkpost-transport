@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Exercise: send a real message through the SparkPost transport.
+ * Exercise: send through the transport, the SparkPost way. Reaches the live API.
  *
  * The suite proves the payload is built correctly against a stub client. It cannot tell
  * you whether SparkPost accepts what Symfony produces, which is the only question left

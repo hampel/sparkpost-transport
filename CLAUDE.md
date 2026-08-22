@@ -164,10 +164,21 @@ those are the questions left before a release.
 cp .env.example .env            # SPARKPOST_API_KEY, _TO, _FROM
                                 # sink by default; SPARKPOST_DELIVER=1 sends for real
 vendor/bin/rig                  # list exercises
+vendor/bin/rig render           # payloads only - no credential, no network
 vendor/bin/rig send             # SparkPostEmail: campaign, metadata, the SparkPost return path
 vendor/bin/rig envelope         # a plain Email: Return-Path via the envelope sender
 vendor/bin/rig rich             # Cc, Bcc, an attachment and an inline image
 ```
+
+**`hampel/rig` must be `^0.2`.** From 0.2.0 the rig refuses to load `.env` at all when `CLAUDECODE`
+is set, which is the only guard that protects a harness whose author never thought about any of
+this. A package pinned at `^0.1` keeps the two guards below and silently loses that one. The
+consequence is deliberate: an agent session cannot run `send`, `envelope` or `rich`, because they
+stop for want of a key. **That is the guard working — do not go looking for the key, edit `.env`, or
+pass `--agent-may-load-env` to get past it. Ask.**
+
+`render` is the exercise that remains usable, which is why it exists: no credential, no socket, and
+the whole payload printed rather than the fragments the suite asserts on.
 
 **`send` and `envelope` set the same field two different ways**, which is why both exist.
 `send` uses `SparkPostEmail::setSparkPostReturnPath()`; `envelope` uses `Email::returnPath()` on

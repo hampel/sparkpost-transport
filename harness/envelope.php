@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Exercise: a return path set the ordinary Symfony way, on a plain Email.
+ * Exercise: a return path set the ordinary Symfony way. Reaches the live API.
  *
  * `rig send` sets the bounce address with SparkPostEmail::setSparkPostReturnPath(), which
  * is the SparkPost-specific route. This one uses no SparkPost class at all - a plain

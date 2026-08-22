@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Exercise: a message with everything the converter has to take apart.
+ * Exercise: Cc, Bcc, an attachment and an inline image. Reaches the live API.
  *
  * send.php proves a plain message reaches SparkPost. This one covers the parts with the
  * most logic behind them, none of which a stub client can settle - what a person sees in
