@@ -23,7 +23,7 @@
     "license": "MIT",
     "require": {
         "php": ">=8.3",
-        "hampel/sparkpost": "^0.1.0",
+        "hampel/sparkpost": "^0.1.0|^0.2.0",
         "symfony/mailer": "^5.4|^6.4|^7.0",
         "symfony/mime": "^5.4|^6.4|^7.0"
     },
