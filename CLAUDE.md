@@ -86,6 +86,20 @@ that merely looks wrong.
 Note that `Envelope::setRecipients()` discards display names, because an envelope is SMTP-level.
 That is not a quirk to work around; it is why the To: line has to come from the headers.
 
+### Default options, and why the precedence falls out for free
+
+`EmailConverter` takes an array of transmission options applied to every message before
+anything else. The precedence — message beats default — is not enforced here; it comes from
+`Transmission::buildOptions()`, which returns `$options + $this->extraOptions`, so the typed
+per-message values (`transactional()`, `openTracking()`) win over anything set through
+`option()`. Defaults go in through `option()`, so they lose to a per-message value and win
+over nothing at all. A per-message `setOptions()` key beats a default of the same name
+because it is written later.
+
+The defaults apply to a plain `Email` too, which is the case they exist for: a framework's
+own mailer builds `Email`, not `SparkPostEmail`, so without this an application cannot say
+"never track, always transactional" once.
+
 ### Inline images are named by filename, not content id
 
 Symfony rewrites `cid:<name>` into `cid:<generated id>` when it renders the MIME message — and it

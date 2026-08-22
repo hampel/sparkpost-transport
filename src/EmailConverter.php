@@ -31,9 +31,26 @@ use Symfony\Component\Mime\Part\DataPart;
  */
 final class EmailConverter
 {
+    /**
+     * @param  array<string, mixed>  $defaultOptions  transmission options applied to every
+     *                                                message - open_tracking, transactional,
+     *                                                ip_pool - each overridden by anything the
+     *                                                message itself carries.
+     */
+    public function __construct(private readonly array $defaultOptions = [])
+    {
+    }
+
     public function convert(Email $email, Envelope $envelope): Transmission
     {
         $transmission = Transmission::make();
+
+        // First, so everything below overrides them. A plain Email gets these too, which is
+        // the point: an application configures tracking and transactional once, and its
+        // Mailables do not each have to remember.
+        foreach ($this->defaultOptions as $key => $value) {
+            $transmission->option($key, $value);
+        }
 
         $this->applyFrom($transmission, $email, $envelope);
         $this->applyAddresses($transmission, $email);

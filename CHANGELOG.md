@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+Unreleased
+----------
+
+* EmailConverter accepts default transmission options, applied to every message and
+  overridden by anything the message itself carries
+
 0.1.0 (2026-08-22)
 ------------------
 

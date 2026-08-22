@@ -13,11 +13,12 @@ use Symfony\Component\Mime\Email;
 final class EmailConverterTest extends TestCase
 {
     /**
+     * @param  array<string, mixed>  $defaults
      * @return array<mixed>
      */
-    private function convert(Email $email, ?Envelope $envelope = null): array
+    private function convert(Email $email, ?Envelope $envelope = null, array $defaults = []): array
     {
-        return (new EmailConverter())->convert($email, $envelope ?? Envelope::create($email))->toArray();
+        return (new EmailConverter($defaults))->convert($email, $envelope ?? Envelope::create($email))->toArray();
     }
 
     /**
@@ -217,6 +218,62 @@ final class EmailConverterTest extends TestCase
             ['open_tracking' => false, 'click_tracking' => false, 'transactional' => true, 'sandbox' => true, 'ip_pool' => 'marketing'],
             self::path($payload, 'options')
         );
+    }
+
+    /**
+     * Default options exist for the application that wants tracking off and everything
+     * marked transactional without each message having to say so. A plain Email gets them,
+     * which is the case that matters - a framework's own mailer does not know what a
+     * SparkPostEmail is.
+     */
+    public function test_default_options_reach_a_plain_email(): void
+    {
+        $payload = $this->convert($this->email(), null, [
+            'open_tracking' => false,
+            'click_tracking' => false,
+            'transactional' => true,
+            'ip_pool' => 'transactional-pool',
+        ]);
+
+        $this->assertSame([
+            'open_tracking' => false,
+            'click_tracking' => false,
+            'transactional' => true,
+            'ip_pool' => 'transactional-pool',
+        ], self::path($payload, 'options'));
+    }
+
+    public function test_a_message_overrides_a_default_it_disagrees_with(): void
+    {
+        $email = (new SparkPostEmail())->setOpenTracking(true)->setTransactional(false);
+        $email->from('webmaster@example.com')->to('alice@example.com')->subject('Hi')->text('Body.');
+
+        $payload = $this->convert($email, null, [
+            'open_tracking' => false,
+            'click_tracking' => false,
+            'transactional' => true,
+        ]);
+
+        $this->assertTrue(self::path($payload, 'options.open_tracking'));
+        $this->assertFalse(self::path($payload, 'options.transactional'));
+
+        // Untouched by the message, so the default still stands.
+        $this->assertFalse(self::path($payload, 'options.click_tracking'));
+    }
+
+    public function test_a_message_option_overrides_a_default_of_the_same_name(): void
+    {
+        $email = (new SparkPostEmail())->setOptions(['ip_pool' => 'bulk']);
+        $email->from('webmaster@example.com')->to('alice@example.com')->subject('Hi')->text('Body.');
+
+        $payload = $this->convert($email, null, ['ip_pool' => 'transactional-pool']);
+
+        $this->assertSame('bulk', self::path($payload, 'options.ip_pool'));
+    }
+
+    public function test_no_defaults_is_the_same_as_before(): void
+    {
+        $this->assertNull(self::path($this->convert($this->email()), 'options'));
     }
 
     public function test_a_template_replaces_the_body_built_from_the_message(): void

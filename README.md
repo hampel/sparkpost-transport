@@ -107,6 +107,24 @@ From and a To, because the envelope is built from them:
 (new SparkPostEmail())->setAbTest('subject-line')->from(…)->to(…);
 ```
 
+## Options for every message
+
+Campaigns and metadata are per-message, but tracking and transactional are usually a
+decision an application makes once. `EmailConverter` takes defaults for them, applied to
+every message the transport sends — including a plain `Email`, which matters when the
+messages are built by a framework that has never heard of `SparkPostEmail`:
+
+```php
+$transport = new SparkPostTransport($sparkpost, null, null, new EmailConverter([
+    'open_tracking' => false,
+    'click_tracking' => false,
+    'transactional' => true,
+]));
+```
+
+Anything the message itself carries wins, so a single `SparkPostEmail` can still turn
+tracking back on without disturbing the default.
+
 ## Cc, Bcc, and what the recipient sees
 
 SparkPost sends one message per recipient, so a naive transport gives every recipient a
