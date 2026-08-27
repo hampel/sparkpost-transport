@@ -59,10 +59,21 @@ result.
 every *transitive* one in place. So a `src/` class using something that arrives only because a
 declared dependency happens to require it passes cleanly — the package is installed, PHPStan
 resolves it, nothing is reported. That is how `symfony/event-dispatcher`, `psr/log` and
-`psr/event-dispatcher` sat undeclared through an audit while being imported in `src/`. The tool
-that does find it is `composer-require-checker`, which reads what the code names rather than what
-happens to be on disk; the fix was to declare all three, and the check belongs in an audit rather
-than in CI.
+`psr/event-dispatcher` sat undeclared through an audit while being imported in `src/`.
+
+**So the same job also runs `composer-require-checker`**, which maps each symbol back to the
+package that supplies it and fails on anything outside `require` — reading what the code names
+rather than what happens to be on disk. The live example here is `hampel/sparkpost`, which brings
+`psr/http-client`, `psr/http-factory` and `psr/http-message`: a `Psr\Http\Message\` call in
+`src/` passes the PHPStan step and fails the checker, which is exactly the pair of results the two
+steps exist to produce. It also names an undeclared `ext-*`, which nothing else here covers.
+
+Two things about it are worth knowing before changing the step. It reports symbols that are
+**used**, so a bare `use` with no call is invisible to it — plant a call when probing whether it
+still bites. And its known-symbol set comes from `require` rather than from the tree, so it gives
+the same answer with the dev packages installed: reusing the `--no-dev` install is convenient, not
+load-bearing, and `vendor/bin/composer-require-checker check composer.json` can be run by hand at
+any time. It has to come from outside the package either way, for the same reason PHPStan does.
 
 ## Symfony 5.4 is supported on purpose
 

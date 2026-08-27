@@ -105,6 +105,29 @@ jobs:
           -c .github/phpstan-nodev.neon
           --autoload-file=vendor/autoload.php --no-progress
 
+      # The step above cannot see a dependency that arrives transitively, and that is
+      # structural rather than a gap to tune: --no-dev removes require-dev and nothing
+      # else, so everything a DECLARED package drags in is still installed and every
+      # symbol still resolves. hampel/sparkpost brings psr/http-client, psr/http-factory
+      # and psr/http-message; a Psr\Http\Message\ call added to src/ passes the run above
+      # and is undeclared. Verified both ways before this was added.
+      #
+      # composer-require-checker maps each symbol back to the package that supplies it and
+      # fails on anything outside "require", so it reads what the code names rather than
+      # what happens to be on disk. It is what found the three packages src/ imported and
+      # composer.json did not, after a ten-phase audit had called this clean. It also names
+      # an undeclared ext-*, which nothing else here covers - PHPStan knows the functions
+      # from its own stubs and the suite passes because the runner has the extension.
+      #
+      # Reusing the --no-dev tree is convenient, not required: the known-symbol set comes
+      # from what "require" names, so the answer is the same with the dev packages
+      # installed, and it can be run by hand at any time without stripping anything.
+      - run: |
+          mkdir -p /tmp/crc
+          composer -d /tmp/crc require maglnet/composer-require-checker --no-progress
+
+      - run: /tmp/crc/vendor/bin/composer-require-checker check composer.json
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
