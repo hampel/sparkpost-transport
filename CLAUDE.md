@@ -27,11 +27,12 @@ composer update --with="symfony/mailer:^7.0" --with="symfony/mime:^7.0"
 
 PHPStan runs at **level 10** over `src` and `tests`.
 
-`hampel/sparkpost` is on Packagist as of 0.1.0, and the constraint here is `^0.1.0` — which
-Composer reads as `>=0.1.0 <0.2.0`. That is deliberate rather than conservative: 0.x makes no
-compatibility promise, so a wider constraint would let an API that is still moving arrive
-unannounced. The path repository, `minimum-stability: dev` and `prefer-stable` that stood in for a
-published dependency are all gone.
+`hampel/sparkpost` is on Packagist, and the constraint here is `^0.1.0|^0.2.0` — each caret
+range spelled out, because Composer reads `^0.1.0` as `>=0.1.0 <0.2.0` and a 0.x caret never
+reaches the next minor. That is why widening it is a deliberate act rather than something
+`composer update` does: 0.x makes no compatibility promise, so every minor is reviewed before it
+is allowed in. The path repository, `minimum-stability: dev` and `prefer-stable` that stood in for
+a published dependency are all gone.
 
 **The `Declared dependencies` CI job is the one worth understanding.** It installs `--no-dev` and
 runs PHPStan over `src/` alone, so anything called there that is not in `require` comes back as
@@ -42,6 +43,15 @@ needs PHPStan from outside the package, since `--no-dev` deletes it, and `-c .gi
 is not optional — without it PHPStan finds the package's own config, which points at `tests/` and can
 no longer resolve PHPUnit, turning the run into a configuration error you will read as a dependency
 result.
+
+**What that job cannot see, by construction:** `--no-dev` removes the dev packages and leaves
+every *transitive* one in place. So a `src/` class using something that arrives only because a
+declared dependency happens to require it passes cleanly — the package is installed, PHPStan
+resolves it, nothing is reported. That is how `symfony/event-dispatcher`, `psr/log` and
+`psr/event-dispatcher` sat undeclared through an audit while being imported in `src/`. The tool
+that does find it is `composer-require-checker`, which reads what the code names rather than what
+happens to be on disk; the fix was to declare all three, and the check belongs in an audit rather
+than in CI.
 
 ## Symfony 5.4 is supported on purpose
 
@@ -170,12 +180,15 @@ vendor/bin/rig envelope         # a plain Email: Return-Path via the envelope se
 vendor/bin/rig rich             # Cc, Bcc, an attachment and an inline image
 ```
 
-**`hampel/rig` must be `^0.2`.** From 0.2.0 the rig refuses to load `.env` at all when `CLAUDECODE`
+**`hampel/rig` must be `^1.1`.** From 0.2.0 the rig refuses to load `.env` at all when `CLAUDECODE`
 is set, which is the only guard that protects a harness whose author never thought about any of
-this. A package pinned at `^0.1` keeps the two guards below and silently loses that one. The
-consequence is deliberate: an agent session cannot run `send`, `envelope` or `rich`, because they
-stop for want of a key. **That is the guard working — do not go looking for the key, edit `.env`, or
-pass `--agent-may-load-env` to get past it. Ask.**
+this. A package pinned at `^0.1` keeps the two guards below and silently loses that one — and
+because a caret below 1.0.0 cannot reach the next minor, neither `^0.1` nor `^0.2` is a constraint
+`composer update` will ever lift. From `^1.0` a minor arrives on the next update, which is why the
+rig left 0.x. `^1.1` rather than `^1.0` because the exercises call `Io::values()`, which arrived
+there. The consequence is deliberate: an agent session cannot run `send`, `envelope` or `rich`,
+because they stop for want of a key. **That is the guard working — do not go looking for the key,
+edit `.env`, or pass `--agent-may-load-env` to get past it. Ask.**
 
 `render` is the exercise that remains usable, which is why it exists: no credential, no socket, and
 the whole payload printed rather than the fragments the suite asserts on.
