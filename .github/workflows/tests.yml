@@ -48,7 +48,19 @@ jobs:
       # --with, not `composer require`: it constrains within the declared range and
       # refuses to go outside it, so the matrix cannot drift away from composer.json
       # without the job failing.
-      - run: composer update --with="symfony/mailer:${{ matrix.symfony }}" --with="symfony/mime:${{ matrix.symfony }}" --prefer-dist --no-progress ${{ matrix.deps }}
+      #
+      # Name EVERY Symfony component in `require`, not just the two the package is
+      # obviously about. --with only constrains what it is given, so an unnamed one
+      # resolves free and the row reports a Symfony version it never ran: before
+      # event-dispatcher was listed here, the ^6.4 row resolved it to 7.4. The ^5.4 row
+      # got the right answer for the wrong reason, --prefer-lowest dragging everything
+      # down, so it would have started lying the moment that flag moved.
+      - run: >
+          composer update
+          --with="symfony/mailer:${{ matrix.symfony }}"
+          --with="symfony/mime:${{ matrix.symfony }}"
+          --with="symfony/event-dispatcher:${{ matrix.symfony }}"
+          --prefer-dist --no-progress ${{ matrix.deps }}
 
       - run: vendor/bin/phpunit
 
