@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+0.4.0 (2026-08-27)
+------------------
+
+* declares symfony/event-dispatcher, psr/log and psr/event-dispatcher, used in src/ and
+  previously undeclared
+* requires hampel/sparkpost ^0.3.0; ^0.1.0 and ^0.2.0 are no longer supported
+
 0.3.0 (2026-08-23)
 ------------------
 
