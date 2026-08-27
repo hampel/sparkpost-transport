@@ -138,20 +138,22 @@ $payload = (new EmailConverter())->convert($email, Envelope::create($email))->to
 
 $recipients = $payload['recipients'] ?? [];
 
-$io->value('delivered to', array_map(static fn (array $r): string => $r['address']['email'] ?? '?', $recipients));
-$io->value('header_to', array_values(array_unique(array_map(
-    static fn (array $r): string => $r['address']['header_to'] ?? '(none)',
-    $recipients
-))));
-$io->value('content.headers', $payload['content']['headers'] ?? '(none)');
-$io->value('attachments', array_map(
-    static fn (array $a): string => sprintf('%s (%s)', $a['name'] ?? '?', $a['type'] ?? '?'),
-    $payload['content']['attachments'] ?? []
-));
-$io->value('inline_images', array_map(
-    static fn (array $a): string => sprintf('%s (%s)', $a['name'] ?? '?', $a['type'] ?? '?'),
-    $payload['content']['inline_images'] ?? []
-));
+$io->values([
+    'delivered to' => array_map(static fn (array $r): string => $r['address']['email'] ?? '?', $recipients),
+    'header_to' => array_values(array_unique(array_map(
+        static fn (array $r): string => $r['address']['header_to'] ?? '(none)',
+        $recipients
+    ))),
+    'content.headers' => $payload['content']['headers'] ?? '(none)',
+    'attachments' => array_map(
+        static fn (array $a): string => sprintf('%s (%s)', $a['name'] ?? '?', $a['type'] ?? '?'),
+        $payload['content']['attachments'] ?? []
+    ),
+    'inline_images' => array_map(
+        static fn (array $a): string => sprintf('%s (%s)', $a['name'] ?? '?', $a['type'] ?? '?'),
+        $payload['content']['inline_images'] ?? []
+    ),
+]);
 $io->line();
 
 if (str_contains(json_encode($payload['content']['headers'] ?? []) ?: '', $bcc)) {

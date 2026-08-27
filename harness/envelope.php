@@ -123,10 +123,12 @@ if ($returnPath !== null) {
 $envelope = Envelope::create($email);
 $payload = $converter->convert($email, $envelope)->toArray();
 
-$io->value('header From', $from);
-$io->value('envelope sender', $envelope->getSender()->getAddress());
-$io->value('return_path', $payload['return_path'] ?? '(not in the payload)');
-$io->value('options', $payload['options'] ?? '(none)');
+$io->values([
+    'header From' => $from,
+    'envelope sender' => $envelope->getSender()->getAddress(),
+    'return_path' => $payload['return_path'] ?? '(not in the payload)',
+    'options' => $payload['options'] ?? '(none)',
+]);
 $io->line();
 
 // Nothing on the Email asked for these, so if they are absent the defaults did not reach a
