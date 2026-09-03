@@ -23,7 +23,7 @@
     "license": "MIT",
     "require": {
         "php": ">=8.3",
-        "hampel/sparkpost": "^0.4.0",
+        "hampel/sparkpost": "^1.0",
         "psr/event-dispatcher": "^1",
         "psr/log": "^1|^2|^3",
         "symfony/event-dispatcher": "^5.4|^6.4|^7.0",

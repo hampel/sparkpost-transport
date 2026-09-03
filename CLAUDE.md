@@ -27,20 +27,28 @@ composer update --with="symfony/mailer:^7.0" --with="symfony/mime:^7.0"
 
 PHPStan runs at **level 10** over `src` and `tests`.
 
-`hampel/sparkpost` is on Packagist, and the constraint here is **`^0.4.0` — one 0.x minor, the
-current one**. Composer reads that as `>=0.4.0 <0.5.0`, because a 0.x caret never reaches the
-next minor; so each new minor of the API package is a deliberate edit here, reviewed rather than
-picked up by `composer update`. That much is a consequence of 0.x making no compatibility
-promise.
+`hampel/sparkpost` is on Packagist and the constraint here is **`^1.0`** — `>=1.0.0 <2.0.0`, so a
+new minor of the API package arrives on a `composer update` and needs no edit here.
 
-**What is a decision, and easy to get backwards, is that the older minors are dropped rather
-than kept alongside.** A constraint like `^0.2.0|^0.3.0|^0.4.0` looks generous and is an unbacked
-promise: CI resolves the newest match and nothing else, so the older ranges are claimed and never
-exercised — and a consumer who resolves to one of them misses whatever the later minors fixed.
-Nothing is taken from anyone by narrowing, either: Composer installs the newest release whose
-constraint a consumer satisfies, so someone held at an older `hampel/sparkpost` keeps installing
-the last tag of this package that allowed it. The released tags are the compatibility support;
-the constraint should claim only what CI proves.
+**It was `^0.4.0` until 1.0.0, and the difference is worth understanding, because the tightness was
+never a policy.** Below 1.0 a caret cannot reach the next minor: `^0.4.0` is `>=0.4.0 <0.5.0`, so
+every API-package minor was a deliberate reviewed edit here, and in practice a coordinated bump
+across four repositories. That was a consequence of 0.x making no compatibility promise, not a
+house style — and it ends with 0.x. Do not carry it forward by reflex.
+
+Note the shape that *would* recreate it: **`~1.0.0` is `>=1.0.0 <1.1.0`**, pinning to a single
+minor line. `^1.0.0` and `^1.0` are identical — above 1.0 the caret does not care how many digits
+you write — so the digit count is harmless and the tilde is not. `~1.0.0` and `^1.0.0` look
+interchangeable in a way `^0.4.0` and `^1.0` do not, which is what makes it the plausible slip.
+
+**What is a decision, and survives 1.0.0, is that superseded ranges are dropped rather than kept
+alongside.** A constraint like `^0.2.0|^0.3.0|^0.4.0` looks generous and is an unbacked promise: CI
+resolves the newest match and nothing else, so the older ranges are claimed and never exercised —
+and a consumer who resolves to one of them misses whatever the later releases fixed. Nothing is
+taken from anyone by narrowing, either: Composer installs the newest release whose constraint a
+consumer satisfies, so someone held at an older `hampel/sparkpost` keeps installing the last tag of
+this package that allowed it. The released tags are the compatibility support; the constraint
+should claim only what CI proves. At 2.0.0 that means writing `^2.0`, not `^1.0|^2.0`.
 
 The path repository, `minimum-stability: dev` and `prefer-stable` that stood in for a published
 dependency are all gone.
