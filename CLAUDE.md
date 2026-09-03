@@ -27,14 +27,14 @@ composer update --with="symfony/mailer:^7.0" --with="symfony/mime:^7.0"
 
 PHPStan runs at **level 10** over `src` and `tests`.
 
-`hampel/sparkpost` is on Packagist, and the constraint here is **`^0.3.0` — one 0.x minor, the
-current one**. Composer reads that as `>=0.3.0 <0.4.0`, because a 0.x caret never reaches the
+`hampel/sparkpost` is on Packagist, and the constraint here is **`^0.4.0` — one 0.x minor, the
+current one**. Composer reads that as `>=0.4.0 <0.5.0`, because a 0.x caret never reaches the
 next minor; so each new minor of the API package is a deliberate edit here, reviewed rather than
 picked up by `composer update`. That much is a consequence of 0.x making no compatibility
 promise.
 
 **What is a decision, and easy to get backwards, is that the older minors are dropped rather
-than kept alongside.** A constraint like `^0.1.0|^0.2.0|^0.3.0` looks generous and is an unbacked
+than kept alongside.** A constraint like `^0.2.0|^0.3.0|^0.4.0` looks generous and is an unbacked
 promise: CI resolves the newest match and nothing else, so the older ranges are claimed and never
 exercised — and a consumer who resolves to one of them misses whatever the later minors fixed.
 Nothing is taken from anyone by narrowing, either: Composer installs the newest release whose
