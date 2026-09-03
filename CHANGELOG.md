@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+1.0.0 (2026-09-04)
+------------------
+
+* the API this package exposes is now stable, and versioned under semver rather than 0.x. The
+  transport, `SparkPostEmail`, `EmailConverter` and `SinkEnvelopeListener` are unchanged from
+  0.5.0 - nothing in `src/` moved for this release
+* requires hampel/sparkpost ^1.0; ^0.4.0 is no longer supported. The dependency reaching 1.0.0
+  is what allows this one to: a stable package resting on a 0.x dependency over-promises, which
+  is why the package stayed 0.x until now
+* the constraint on hampel/sparkpost is no longer one minor wide. Below 1.0 a caret cannot reach
+  the next minor, so each API-package release needed a coordinated bump here; `^1.0` picks up
+  1.x minors without an edit
+
 0.5.0 (2026-09-04)
 ------------------
 
