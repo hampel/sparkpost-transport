@@ -153,6 +153,14 @@ A consumer of a Symfony transport catches `TransportExceptionInterface`. The API
 exceptions, and the Mime component's, are not that — so `doSend()` wraps both. Keep it that way:
 an exception that slips past is a send that fails silently in every application using this.
 
+**Wrapping means wrapping, not flattening: the original goes in as `previous`.** SparkPost returns
+a structured `errors` array, and the API package's exception carries it decoded. A consumer that
+wants to show the fields separately — an admin screen reporting what the API objected to — reaches
+`$e->getPrevious()->errors`. If the cause is dropped and only `getMessage()` survives, the only way
+back to those fields is to parse them out of the message text, which is fragile in the way that
+fails quietly rather than loudly. `test_an_api_error_arrives_as_a_transport_exception` pins the
+chain; it is a contract a consumer relies on, not an incidental assertion.
+
 ### HTTP 200 is not a successful send
 
 SparkPost answers `200` having accepted zero recipients — every address suppressed or invalid.
