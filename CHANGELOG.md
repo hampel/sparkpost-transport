@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.5.0 (2026-09-04)
+------------------
+
+* requires hampel/sparkpost ^0.4.0; ^0.3.0 is no longer supported
+
 0.4.0 (2026-08-27)
 ------------------
 
