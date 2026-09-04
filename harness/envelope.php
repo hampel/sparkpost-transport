@@ -202,9 +202,9 @@ $io->line('  sparkpostmail.com where there is none. The payload above is identic
 $io->line('  way, so the delivered header is the only thing that tells them apart.');
 $io->line();
 $io->line('  And an unrecognised domain is not a harmless no-op: the fallback aligns with');
-$io->line('  nothing, leaving DMARC on DKIM alone, which has been observed to lose the');
-$io->line('  message at a DMARC-enforcing receiver. If nothing arrives at all, that is the');
-$io->line('  first thing to check - SparkPost will have reported the send as fine.');
+$io->line('  nothing, leaving DMARC on DKIM alone, so a receiver enforcing it can refuse');
+$io->line('  the message. If nothing arrives at all, that is the first thing to check -');
+$io->line('  SparkPost will have reported the send as fine.');
 
 if (strcasecmp($envelopeDomain, $fromDomain) === 0) {
     $io->success(sprintf('Envelope and From are both on %s, so SPF alignment is satisfied', $fromDomain));

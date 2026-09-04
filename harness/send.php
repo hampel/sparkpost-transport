@@ -28,10 +28,9 @@
  * DMARC.
  *
  * Discarded is about SparkPost and not about delivery. The fallback aligns with nothing, so
- * DMARC rests on DKIM alone - and a bogus return path has been observed to produce an
- * accepted transmission that never arrived, the same send under a configured domain
- * delivering minutes later. Every one of those verdicts is reached on somebody else's mail
- * server, so no amount of unit testing reaches them, and the payload is identical in all.
+ * DMARC rests on DKIM alone, and a receiver enforcing it can refuse a message SparkPost sent
+ * without complaint. Every one of those verdicts is reached on somebody else's mail server,
+ * so no amount of unit testing reaches them, and the payload is identical in all of them.
  *
  * This exercise sets the return path the SparkPost-specific way. `rig envelope` sets the
  * same field the ordinary Symfony way; the two are worth comparing.

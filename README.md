@@ -210,13 +210,11 @@ passes on the strength of SPF only when that domain **aligns** with the `From:` 
 fallback above authenticates correctly, aligns with nothing, and leaves DMARC resting on
 DKIM alone.
 
-**That is one failure away from rejection rather than two, and it has been observed on a real
-account.** A message sent with an unrecognised bounce domain was accepted by SparkPost and
-never arrived; the same send with a configured domain, minutes later, was delivered. With the
-value discarded there was no aligned SPF, and DKIM alignment was not carrying, so a receiver
-enforcing DMARC refused a message SparkPost had sent perfectly well. An aligned bounce domain
-is not belt-and-braces — it is the second of two independent routes to a DMARC pass, and
-without it a DKIM problem is an outage rather than a degradation.
+**That is one failure away from rejection rather than two.** An aligned bounce domain is not
+belt-and-braces: it is the second of two independent routes to a DMARC pass. Without one the
+message rests entirely on DKIM alignment, so a DKIM problem becomes an outage rather than a
+degradation — and a receiver enforcing DMARC refuses a message SparkPost sent perfectly well,
+with nothing on the sending side to show that it did.
 
 **Alignment is a relationship between the two domains, not a property of either.** Relaxed
 alignment needs the same organisational domain, strict needs the identical one:
