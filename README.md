@@ -77,14 +77,27 @@ try {
     $cause = $e->getPrevious();      // the hampel/sparkpost exception, when the API refused
 
     if ($cause instanceof \Hampel\SparkPost\Exception\ApiException) {
-        $cause->errors;              // SparkPost's own error objects, decoded
+        foreach ($cause->errors as $error) {
+            $error['message'] ?? '';     // SparkPost's own fields, decoded
+        }
     }
 }
 ```
 
-This is a supported contract and will not be removed in a 1.x release. What the cause
-*contains* is `hampel/sparkpost`'s surface rather than this package's, and moves under its
-versioning, not ours — so guard the type as above rather than assuming it.
+This is a supported contract and will not be removed in a 1.x release.
+
+**The container is promised; the contents are not**, and the line between them is
+`hampel/sparkpost`'s rather than this package's. `$errors` is `public readonly` on every
+`ApiException` subclass and is always a list of arrays — empty when the response carried no
+`errors`, and empty when the body was not JSON at all, which happens when a proxy answers
+on that URL with HTML. It is never `null`, so no guard is needed beyond the `instanceof`.
+The keys *inside* each error are SparkPost's payload, passed through unreshaped: if SparkPost
+renames a field, neither package will notice and neither will issue a major for it. Hence
+`??` above rather than a bare index.
+
+`ApiException` is abstract; the concrete throw is `ClientException`, `RateLimitException` or
+`ServerException`, so the one `instanceof` covers all three and keeps working if a fourth
+appears.
 
 The SparkPost transmission id is recorded as the message id. `Mailer::send()` returns
 `void`, so the `SentMessage` carrying it comes from the transport:
