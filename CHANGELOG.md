@@ -32,9 +32,10 @@ CHANGELOG
 * the envelope sender is sent as the transmission return_path, so Email::returnPath() and
   Email::sender() now reach SparkPost - previously both were discarded
 * a message setting a bounce domain that is not configured on the account is accepted by
-  SparkPost, which discards the value and delivers under its own default bounce domain
-  instead - corrected 2026-09-04, having originally said the message was not delivered,
-  which was measured to be wrong
+  SparkPost, which discards the value and sends under its own default bounce domain
+  instead - corrected 2026-09-04, having originally said SparkPost did not deliver it. The
+  send does happen; the fallback then aligns with nothing, so the message can still be
+  refused downstream by a receiver enforcing DMARC
 * allow hampel/sparkpost ^0.2.0
 
 0.2.0 (2026-08-22)

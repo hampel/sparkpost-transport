@@ -189,10 +189,15 @@ The following was measured against a live account rather than read from document
   `<id>@bounce.example.com`. Reading back a local part you did not choose is what success
   looks like here, not a failure.
 - **A domain the account has not been configured for is discarded, not honoured.** The
-  transmission is accepted, the value is ignored, and the message is delivered under the
-  fallback below. A wrong value is inert rather than destructive: it costs you the alignment
-  described below and nothing else. It is the `From:` that SparkPost polices, with
+  transmission is accepted, the value is ignored, and the message is sent under the fallback
+  below. It is the `From:` that SparkPost polices, with
   `HTTP 400 "Unconfigured Sending Domain <domain>"`.
+
+  **Discarded is a statement about SparkPost, not about delivery.** The value is inert at the
+  API and can still cost you the message at the far end, because the fallback removes the SPF
+  leg of DMARC — see below. Setting a domain the account does not know is therefore not a
+  harmless no-op: it is the same position as setting nothing, which is a position worth
+  choosing deliberately rather than arriving at by typo.
 - **The fallback is two steps.** Setting nothing — or setting a domain SparkPost does not
   recognise — uses the account's default bounce domain, or the *subaccount's* where the API
   key is a subaccount key; and where neither is configured, `sparkpostmail.com`.
@@ -203,8 +208,15 @@ A custom bounce domain is usually presented as being about where bounces are col
 larger reason is authentication. SPF authenticates the `Return-Path` domain, and DMARC
 passes on the strength of SPF only when that domain **aligns** with the `From:` — so every
 fallback above authenticates correctly, aligns with nothing, and leaves DMARC resting on
-DKIM alone. An aligned bounce domain is a second, independent route to a DMARC pass, which
-makes a DKIM problem a degradation rather than an outage.
+DKIM alone.
+
+**That is one failure away from rejection rather than two, and it has been observed on a real
+account.** A message sent with an unrecognised bounce domain was accepted by SparkPost and
+never arrived; the same send with a configured domain, minutes later, was delivered. With the
+value discarded there was no aligned SPF, and DKIM alignment was not carrying, so a receiver
+enforcing DMARC refused a message SparkPost had sent perfectly well. An aligned bounce domain
+is not belt-and-braces — it is the second of two independent routes to a DMARC pass, and
+without it a DKIM problem is an outage rather than a degradation.
 
 **Alignment is a relationship between the two domains, not a property of either.** Relaxed
 alignment needs the same organisational domain, strict needs the identical one:

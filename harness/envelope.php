@@ -197,9 +197,14 @@ $io->line('  above will not come back. That is what success looks like, not a fa
 $io->line();
 $io->line('  And only if ' . $envelopeDomain . ' is configured as a bounce domain on the');
 $io->line('  account - or the subaccount, for a subaccount key. If it is not, SparkPost');
-$io->line('  discards the value silently and delivers under the account default, or');
+$io->line('  discards the value silently and sends under the account default, or');
 $io->line('  sparkpostmail.com where there is none. The payload above is identical either');
 $io->line('  way, so the delivered header is the only thing that tells them apart.');
+$io->line();
+$io->line('  And an unrecognised domain is not a harmless no-op: the fallback aligns with');
+$io->line('  nothing, leaving DMARC on DKIM alone, which has been observed to lose the');
+$io->line('  message at a DMARC-enforcing receiver. If nothing arrives at all, that is the');
+$io->line('  first thing to check - SparkPost will have reported the send as fine.');
 
 if (strcasecmp($envelopeDomain, $fromDomain) === 0) {
     $io->success(sprintf('Envelope and From are both on %s, so SPF alignment is satisfied', $fromDomain));
