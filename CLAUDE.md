@@ -33,7 +33,7 @@ new minor of the API package arrives on a `composer update` and needs no edit he
 **It was `^0.4.0` until 1.0.0, and the difference is worth understanding, because the tightness was
 never a policy.** Below 1.0 a caret cannot reach the next minor: `^0.4.0` is `>=0.4.0 <0.5.0`, so
 every API-package minor was a deliberate reviewed edit here, and in practice a coordinated bump
-across four repositories. That was a consequence of 0.x making no compatibility promise, not a
+in every repository along the chain. That was a consequence of 0.x making no compatibility promise, not a
 house style — and it ends with 0.x. Do not carry it forward by reflex.
 
 Note the shape that *would* recreate it: **`~1.0.0` is `>=1.0.0 <1.1.0`**, pinning to a single
@@ -253,7 +253,7 @@ The criterion is not the package's framework. It is whether **the package makes 
 remote service does with what it sends**. This one does — the bounce-address section of the README
 is nothing else — and such a claim is unreachable from a payload, a unit test or a vendor tree, so
 it needs an exercise that delivers. A package that only claims what it *sends* needs no harness at
-all, and `~/packages/CLAUDE.md`'s default of none is right for those.
+all, and is better served by a dependency check that runs on every push.
 
 **The crux, and it is a permanent property of this seam rather than a limitation of the current
 exercises: the transmission is byte-identical whether the bounce domain is configured on the
@@ -262,8 +262,8 @@ payload-inspecting exercise can ever separate those two cases, however well writ
 cannot, and neither can any successor to it. Only the delivered `Return-Path` header distinguishes
 them, which is exactly why `envelope` exists and why it has to be run for real to be worth anything.
 
-**And the way that went wrong on 4 September is worth keeping, because it is the failure mode of
-harnesses generally.** `envelope` was the only instrument that could reach this fact, and it printed
+**And the way that has already gone wrong here is the failure mode of harnesses generally.**
+`envelope` was the only instrument that could reach this fact, and it once printed
 the wrong expectation — `Return-Path: should be <the address as configured>`, when SparkPost keeps
 only the domain and replaces the local part. It was written from the same wrong belief as the prose
 it was meant to check, so it agreed with the error rather than catching it, and it told the operator
@@ -275,7 +275,7 @@ something runnable, and it needs the same scrutiny as the README sentence it cam
 whatever `.env` says, because the working copy normally *does* say `SPARKPOST_DELIVER=1` — that is
 how a human runs it. Without the second gate, a session that knows about the flag and believes the
 default is sink sends real mail, which has happened. Override deliberately with
-`SPARKPOST_AGENT_MAY_DELIVER=1` when Simon has asked for a real send.
+`SPARKPOST_AGENT_MAY_DELIVER=1` when the maintainer has asked for a real send.
 
 ## SparkPostEmail and serialisation
 
@@ -288,14 +288,14 @@ adding a property is one line and an old payload still unserialises.
 
 ## Version support
 
-`php: >=8.3`, per the Tier A support policy these packages follow — the widest range, verified by
-CI at the corners. PHPStan analyses the whole 8.3–8.5 range in one pass. Keep `phpVersion` in `phpstan.neon` in step with the `php`
+`php: >=8.3` — the widest range the toolchain floors allow, verified by CI at the corners rather
+than across a full matrix. PHPStan analyses the whole 8.3–8.5 range in one pass. Keep `phpVersion` in `phpstan.neon` in step with the `php`
 constraint in `composer.json`.
 
 ## Releases
 
 `CHANGELOG.md` is hand-maintained, newest first, `x.y.z (YYYY-MM-DD)` heading with bullet points, and
-is updated in its own commit before tagging. Simon does his own pushes and tagging.
+is updated in its own commit before tagging. The maintainer does the pushing and tagging.
 
 ### A minor that changes what gets *emitted* has to say so loudly
 
@@ -307,8 +307,8 @@ consumer, and the bump made someone read the CHANGELOG whether they meant to or 
 **0.3.0 is the precedent, and its entry is the illustration.** It began sending the envelope sender
 as `return_path`, which is described accurately. What it does not say is the part that reached a
 consumer: an application that changed nothing suddenly started sending a `return_path` it had
-configured long ago and had never had sent for it before. That reached the downstream package only
-because the constraint bump made someone read this file. Nothing would carry it now.
+configured long ago and had never had sent for it before. That reached its consumers only because
+the constraint bump made someone read this file. Nothing would carry it now.
 
 So when a change alters the payload SparkPost receives — rather than the API this package offers —
 the entry has to be written for someone who changed nothing and is not reading carefully. Say what
