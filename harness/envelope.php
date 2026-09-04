@@ -183,18 +183,29 @@ if ($returnPath === null) {
     return;
 }
 
-$io->line();
-$io->info('Read the delivered message:');
-$io->line('  Return-Path:                   should be ' . $returnPath);
-$io->line('  Authentication-Results: spf    authenticates that domain, not the From');
-$io->line('  Authentication-Results: dmarc  passes only if SPF or DKIM aligns with the From');
-
 $envelopeDomain = substr(strrchr($returnPath, '@') ?: '@', 1);
 $fromDomain = substr(strrchr($from, '@') ?: '@', 1);
 
+$io->line();
+$io->info('Read the delivered message:');
+$io->line('  Return-Path:                   should be <id>@' . $envelopeDomain);
+$io->line('  Authentication-Results: spf    authenticates that domain, not the From');
+$io->line('  Authentication-Results: dmarc  passes only if SPF or DKIM aligns with the From');
+$io->line();
+$io->line('  SparkPost replaces the local part with an identifier of its own, so the "' . strstr($returnPath, '@', true) . '"');
+$io->line('  above will not come back. That is what success looks like, not a failure.');
+$io->line();
+$io->line('  And only if ' . $envelopeDomain . ' is configured as a bounce domain on the');
+$io->line('  account - or the subaccount, for a subaccount key. If it is not, SparkPost');
+$io->line('  discards the value silently and delivers under the account default, or');
+$io->line('  sparkpostmail.com where there is none. The payload above is identical either');
+$io->line('  way, so the delivered header is the only thing that tells them apart.');
+
 if (strcasecmp($envelopeDomain, $fromDomain) === 0) {
-    $io->success(sprintf('Envelope and From are both on %s, so SPF alignment is satisfied.', $fromDomain));
+    $io->success(sprintf('Envelope and From are both on %s, so SPF alignment is satisfied', $fromDomain));
+    $io->success('- provided the domain is configured, per the caveat above.');
 } else {
     $io->warn(sprintf('Envelope is on %s and From is on %s: SPF authenticates but does', $envelopeDomain, $fromDomain));
-    $io->warn('not align. DMARC then rests entirely on DKIM.');
+    $io->warn('not align. DMARC then rests entirely on DKIM, which is the same place the');
+    $io->warn('fallback leaves it - so this bounce domain is buying nothing.');
 }

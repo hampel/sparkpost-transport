@@ -21,10 +21,12 @@
  *
  * SparkPost polices the From and not the return path. A From outside the configured sending
  * domains is refused at the API with HTTP 400 "Unconfigured Sending Domain <domain>"; a
- * return path is not checked at all, so an unverified bounce domain is accepted and the
- * message then does not arrive. Verified but not aligned passes SPF and still fails DMARC.
- * Every one of those verdicts is reached on somebody else's mail server, so no amount of
- * unit testing reaches them.
+ * return path is not checked at all, so a bounce domain the account is not configured for is
+ * accepted and then discarded silently - the mail is delivered under the account default.
+ * Only the domain survives even when it is configured: the local part comes back as an id
+ * SparkPost chose. Configured but not aligned with the From passes SPF and still fails
+ * DMARC. Every one of those verdicts is reached on somebody else's mail server, so no
+ * amount of unit testing reaches them, and the payload is identical in all of them.
  *
  * This exercise sets the return path the SparkPost-specific way. `rig envelope` sets the
  * same field the ordinary Symfony way; the two are worth comparing.

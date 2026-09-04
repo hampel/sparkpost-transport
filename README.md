@@ -168,25 +168,59 @@ and the difference is what DMARC alignment is about.
 Set it the ordinary Symfony way and it is used:
 
 ```php
-$email->returnPath('bounces@example.com');   // or ->sender(...)
+$email->returnPath('bounces@bounce.example.com');   // or ->sender(...)
 ```
 
-Nothing is sent when you set nothing, so SparkPost uses the account's own bounce domain —
-which is where its bounce processing expects mail, so leave it alone unless you have a
-verified custom bounce domain.
-
-Two things worth knowing before you rely on it:
-
-- **A custom bounce domain must be verified on the account.** SparkPost does not check it at
-  send time — the transmission is accepted either way — so a domain it cannot route produces
-  a `200`, and the message then does not arrive. It is the From that SparkPost polices, with
-  `HTTP 400 "Unconfigured Sending Domain <domain>"`.
-- **For DMARC to pass on the strength of SPF, this domain has to align with the `From:`.**
-  `bounces@example.com` against a From of `noreply@example.com` aligns; the same address
-  against a From on another domain authenticates and does not align.
+Nothing is sent when you set nothing: the transport only populates `return_path` when the
+envelope sender actually differs from the `From:`, so a message nobody configured a bounce
+address for is left to SparkPost's own defaults.
 
 `SparkPostEmail::setSparkPostReturnPath()` sets the same field and wins over the envelope,
 for when a single message needs a different bounce address.
+
+### What SparkPost then does with it
+
+None of this is visible from inside this package — it is SparkPost's behaviour, and it
+depends on how the account is configured, so it can only be established by operating one.
+The following was measured against a live account rather than read from documentation:
+
+- **Only the domain survives.** SparkPost replaces the local part with an identifier of its
+  own, so `bounces@bounce.example.com` is delivered with a `Return-Path` of
+  `<id>@bounce.example.com`. Reading back a local part you did not choose is what success
+  looks like here, not a failure.
+- **A domain the account has not been configured for is discarded, not honoured.** The
+  transmission is accepted, the value is ignored, and the message is delivered under the
+  fallback below. A wrong value is inert rather than destructive: it costs you the alignment
+  described below and nothing else. It is the `From:` that SparkPost polices, with
+  `HTTP 400 "Unconfigured Sending Domain <domain>"`.
+- **The fallback is two steps.** Setting nothing — or setting a domain SparkPost does not
+  recognise — uses the account's default bounce domain, or the *subaccount's* where the API
+  key is a subaccount key; and where neither is configured, `sparkpostmail.com`.
+
+### Setting one is worth doing, and it has to be chosen with the `From:`
+
+A custom bounce domain is usually presented as being about where bounces are collected. The
+larger reason is authentication. SPF authenticates the `Return-Path` domain, and DMARC
+passes on the strength of SPF only when that domain **aligns** with the `From:` — so every
+fallback above authenticates correctly, aligns with nothing, and leaves DMARC resting on
+DKIM alone. An aligned bounce domain is a second, independent route to a DMARC pass, which
+makes a DKIM problem a degradation rather than an outage.
+
+**Alignment is a relationship between the two domains, not a property of either.** Relaxed
+alignment needs the same organisational domain, strict needs the identical one:
+
+| `Return-Path` | `From:` | aligns |
+|---|---|---|
+| `<id>@example.com` | `noreply@example.com` | strict, and relaxed |
+| `<id>@bounce.example.com` | `noreply@example.com` | relaxed |
+| `<id>@bounce.example.net` | `noreply@example.com` | neither |
+
+The last row is configured, valid, delivered — and has bought nothing. So the bounce domain
+and the `From:` are chosen together: change either alone and everything keeps working, mail
+keeps arriving, and the second DMARC path disappears with nothing to show for it.
+
+Unset is a working configuration rather than a recommended one. An application with a bounce
+domain available on the account should set it, and should pick one that aligns.
 
 ## Cc, Bcc, and what the recipient sees
 
