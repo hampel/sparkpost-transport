@@ -65,6 +65,27 @@ Everything that leaves the transport implements Symfony's `TransportExceptionInt
 including API errors and connection failures, so the one `catch` a Symfony consumer
 already writes is enough.
 
+**The original exception is kept as `previous`, not flattened into a message.** SparkPost
+returns a structured `errors` array and `hampel/sparkpost` carries it decoded, so an
+application that wants to show what the API objected to — an admin screen, a diagnostics
+page — reads the fields rather than parsing them back out of a string:
+
+```php
+try {
+    $transport->send($email);
+} catch (TransportExceptionInterface $e) {
+    $cause = $e->getPrevious();      // the hampel/sparkpost exception, when the API refused
+
+    if ($cause instanceof \Hampel\SparkPost\Exception\ApiException) {
+        $cause->errors;              // SparkPost's own error objects, decoded
+    }
+}
+```
+
+This is a supported contract and will not be removed in a 1.x release. What the cause
+*contains* is `hampel/sparkpost`'s surface rather than this package's, and moves under its
+versioning, not ours — so guard the type as above rather than assuming it.
+
 The SparkPost transmission id is recorded as the message id. `Mailer::send()` returns
 `void`, so the `SentMessage` carrying it comes from the transport:
 
