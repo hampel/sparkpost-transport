@@ -283,10 +283,18 @@ consumer, and the bump made someone read the CHANGELOG whether they meant to or 
 **0.3.0 is the precedent, and its entry is the illustration.** It began sending the envelope sender
 as `return_path`, which is described accurately. What it does not say is the part that reached a
 consumer: an application that changed nothing suddenly started sending a `return_path` it had
-configured long ago and that had been inert until then. That reached the downstream package only
+configured long ago and had never had sent for it before. That reached the downstream package only
 because the constraint bump made someone read this file. Nothing would carry it now.
 
 So when a change alters the payload SparkPost receives — rather than the API this package offers —
 the entry has to be written for someone who changed nothing and is not reading carefully. Say what
 an application will now send that it did not send before, not only what the transport now does.
 The two read almost the same to the author and completely differently to a consumer.
+
+**And stop there, deliberately.** The temptation is to write the third sentence — what the change
+will *do* — and that one is not ours to make. Whether a newly-sent `return_path` has any effect
+depends on whether the account is configured for that bounce domain, which no test, payload or
+vendor tree here can see: an application naming an unconfigured domain saw 0.3.0 change nothing at
+all. So the entry promises the payload and leaves the consequence to the reader, who is the only
+one who knows their account. That is the same boundary the bounce-address section of the README
+draws, and it is the boundary of what a CHANGELOG can honestly claim rather than a gap in it.
