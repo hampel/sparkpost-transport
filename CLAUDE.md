@@ -247,6 +247,30 @@ built with the same converter the printed payload comes from, so what it shows i
 design — a harness that pulled a framework in would put classes where PHPStan can see them and
 hide a dependency this package never declared.
 
+### Why this package has a harness at all, and what the payload cannot tell you
+
+The criterion is not the package's framework. It is whether **the package makes claims about what a
+remote service does with what it sends**. This one does — the bounce-address section of the README
+is nothing else — and such a claim is unreachable from a payload, a unit test or a vendor tree, so
+it needs an exercise that delivers. A package that only claims what it *sends* needs no harness at
+all, and `~/packages/CLAUDE.md`'s default of none is right for those.
+
+**The crux, and it is a permanent property of this seam rather than a limitation of the current
+exercises: the transmission is byte-identical whether the bounce domain is configured on the
+account or not.** SparkPost accepts both, and silently discards the value in one of them. So no
+payload-inspecting exercise can ever separate those two cases, however well written — `render`
+cannot, and neither can any successor to it. Only the delivered `Return-Path` header distinguishes
+them, which is exactly why `envelope` exists and why it has to be run for real to be worth anything.
+
+**And the way that went wrong on 4 September is worth keeping, because it is the failure mode of
+harnesses generally.** `envelope` was the only instrument that could reach this fact, and it printed
+the wrong expectation — `Return-Path: should be <the address as configured>`, when SparkPost keeps
+only the domain and replaces the local part. It was written from the same wrong belief as the prose
+it was meant to check, so it agreed with the error rather than catching it, and it told the operator
+that the correct outcome was a failure. **An instrument built from an assumption cannot test that
+assumption.** When an exercise prints an expectation, that line is a claim carrying the authority of
+something runnable, and it needs the same scrutiny as the README sentence it came from.
+
 **An agent session cannot deliver.** `harness/lib/delivery.php` refuses when `CLAUDECODE` is set,
 whatever `.env` says, because the working copy normally *does* say `SPARKPOST_DELIVER=1` — that is
 how a human runs it. Without the second gate, a session that knows about the flag and believes the
