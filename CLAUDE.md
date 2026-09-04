@@ -272,3 +272,21 @@ constraint in `composer.json`.
 
 `CHANGELOG.md` is hand-maintained, newest first, `x.y.z (YYYY-MM-DD)` heading with bullet points, and
 is updated in its own commit before tagging. Simon does his own pushes and tagging.
+
+### A minor that changes what gets *emitted* has to say so loudly
+
+Since 1.0.0 the constraint downstream is `^1.0`, so a minor here arrives on a `composer update`
+with nothing prompting anyone to read this file. That is the point of leaving 0.x and it removes a
+tripwire worth knowing about: under `^0.x` every release forced a coordinated bump in each
+consumer, and the bump made someone read the CHANGELOG whether they meant to or not.
+
+**0.3.0 is the precedent, and its entry is the illustration.** It began sending the envelope sender
+as `return_path`, which is described accurately. What it does not say is the part that reached a
+consumer: an application that changed nothing suddenly started sending a `return_path` it had
+configured long ago and that had been inert until then. That reached the downstream package only
+because the constraint bump made someone read this file. Nothing would carry it now.
+
+So when a change alters the payload SparkPost receives — rather than the API this package offers —
+the entry has to be written for someone who changed nothing and is not reading carefully. Say what
+an application will now send that it did not send before, not only what the transport now does.
+The two read almost the same to the author and completely differently to a consumer.
