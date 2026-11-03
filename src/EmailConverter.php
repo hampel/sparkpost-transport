@@ -36,8 +36,9 @@ final class EmailConverter
      *                                                message - open_tracking, transactional,
      *                                                ip_pool - each overridden by anything the
      *                                                message itself carries.
-     * @param  bool  $escapeTemplateSyntax  make double curly braces in the subject, text and
-     *                                      html render literally. See escapesTemplateSyntax().
+     * @param  bool  $escapeTemplateSyntax  make double curly braces in the subject, text, html
+     *                                      and custom header values render literally. See
+     *                                      escapesTemplateSyntax().
      */
     public function __construct(
         private readonly array $defaultOptions = [],
@@ -58,8 +59,10 @@ final class EmailConverter
 
         $this->applyFrom($transmission, $email, $envelope);
         $this->applyAddresses($transmission, $email);
-        $this->applyBody($transmission, $email, $this->escapesTemplateSyntax($email));
-        $this->applyHeaders($transmission, $email);
+        $escape = $this->escapesTemplateSyntax($email);
+
+        $this->applyBody($transmission, $email, $escape);
+        $this->applyHeaders($transmission, $email, $escape);
         $this->applyAttachments($transmission, $email);
 
         // Delivery follows the envelope, always. See the class comment.
@@ -141,7 +144,7 @@ final class EmailConverter
 
     private function applyBody(Transmission $transmission, Email $email, bool $escape): void
     {
-        $literal = static fn (string $value): string => $escape ? Transmission::escapeTemplateSyntax($value) : $value;
+        $literal = self::literal($escape);
 
         $subject = $email->getSubject();
 
@@ -180,8 +183,18 @@ final class EmailConverter
         return null;
     }
 
-    private function applyHeaders(Transmission $transmission, Email $email): void
+    /**
+     * @return \Closure(string): string
+     */
+    private static function literal(bool $escape): \Closure
     {
+        return static fn (string $value): string => $escape ? Transmission::escapeTemplateSyntax($value) : $value;
+    }
+
+    private function applyHeaders(Transmission $transmission, Email $email, bool $escape): void
+    {
+        $literal = self::literal($escape);
+
         foreach ($email->getHeaders()->all() as $header) {
             if (! $header instanceof HeaderInterface) {
                 continue;
@@ -189,7 +202,8 @@ final class EmailConverter
 
             // The builder drops the headers SparkPost derives for itself, so everything
             // can be offered to it and that one list decides.
-            $transmission->header($header->getName(), $header->getBodyAsString());
+            // Header values are rendered as templates like the body. Names are not.
+            $transmission->header($header->getName(), $literal($header->getBodyAsString()));
         }
     }
 

@@ -406,4 +406,25 @@ final class EmailConverterTest extends TestCase
 
         $this->assertSame(['template_id' => 'welcome', 'use_draft_template' => false], self::path($payload, 'content'));
     }
+
+    public function test_escaping_makes_a_custom_header_value_literal(): void
+    {
+        $email = $this->email();
+        $email->getHeaders()->addTextHeader('X-Probe', 'Hello {{contact.name}} there');
+
+        $payload = $this->convert($email, escape: true);
+
+        $this->assertSame(
+            'Hello {{ opening_double_curly() }}contact.name{{ closing_double_curly() }} there',
+            self::path($payload, 'content.headers.X-Probe')
+        );
+    }
+
+    public function test_a_custom_header_is_sent_as_written_by_default(): void
+    {
+        $email = $this->email();
+        $email->getHeaders()->addTextHeader('X-Probe', 'Hello {{contact.name}} there');
+
+        $this->assertSame('Hello {{contact.name}} there', self::path($this->convert($email), 'content.headers.X-Probe'));
+    }
 }
