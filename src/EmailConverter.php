@@ -36,9 +36,13 @@ final class EmailConverter
      *                                                message - open_tracking, transactional,
      *                                                ip_pool - each overridden by anything the
      *                                                message itself carries.
+     * @param  bool  $escapeTemplateSyntax  make double curly braces in the subject, text and
+     *                                      html render literally. See escapesTemplateSyntax().
      */
-    public function __construct(private readonly array $defaultOptions = [])
-    {
+    public function __construct(
+        private readonly array $defaultOptions = [],
+        private readonly bool $escapeTemplateSyntax = false,
+    ) {
     }
 
     public function convert(Email $email, Envelope $envelope): Transmission
@@ -54,7 +58,7 @@ final class EmailConverter
 
         $this->applyFrom($transmission, $email, $envelope);
         $this->applyAddresses($transmission, $email);
-        $this->applyBody($transmission, $email);
+        $this->applyBody($transmission, $email, $this->escapesTemplateSyntax($email));
         $this->applyHeaders($transmission, $email);
         $this->applyAttachments($transmission, $email);
 
@@ -116,24 +120,45 @@ final class EmailConverter
         }
     }
 
-    private function applyBody(Transmission $transmission, Email $email): void
+    /**
+     * SparkPost renders inline content through its template language whether or not
+     * substitution data is sent, so a body that merely contains double curly braces is read
+     * as template syntax: `{{name}}` renders empty, and `{{name.field}}` fails generation
+     * after the send has already been accepted - which nothing here can see.
+     *
+     * Off by default, because escaping is not idempotent: a caller that already escapes its
+     * content would see the macros as visible text. And never for a message carrying
+     * substitution data, because there the braces are the point.
+     */
+    private function escapesTemplateSyntax(Email $email): bool
     {
+        if (! $this->escapeTemplateSyntax) {
+            return false;
+        }
+
+        return ! ($email instanceof SparkPostEmail && $email->getSubstitutionData() !== []);
+    }
+
+    private function applyBody(Transmission $transmission, Email $email, bool $escape): void
+    {
+        $literal = static fn (string $value): string => $escape ? Transmission::escapeTemplateSyntax($value) : $value;
+
         $subject = $email->getSubject();
 
         if ($subject !== null) {
-            $transmission->subject($subject);
+            $transmission->subject($literal($subject));
         }
 
         $text = self::bodyToString($email->getTextBody());
 
         if ($text !== null) {
-            $transmission->text($text);
+            $transmission->text($literal($text));
         }
 
         $html = self::bodyToString($email->getHtmlBody());
 
         if ($html !== null) {
-            $transmission->html($html);
+            $transmission->html($literal($html));
         }
     }
 

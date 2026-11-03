@@ -159,6 +159,39 @@ $transport = new SparkPostTransport($sparkpost, null, null, new EmailConverter([
 Anything the message itself carries wins, so a single `SparkPostEmail` can still turn
 tracking back on without disturbing the default.
 
+## Template syntax
+
+**SparkPost renders the subject, text and HTML through its template language whether or not
+you send substitution data.** So a message that merely contains double curly braces — text a
+user wrote, a code sample — is read as template syntax:
+
+| the content contains | with no matching substitution value |
+|---|---|
+| `{{name}}` or `{{each name}}…{{end}}` | renders as empty — the text silently disappears |
+| `{{name.field}}` or `{{name[0]}}` | the whole message fails to generate |
+
+**The second is the costly one, because the send is accepted first.** The transport reports
+success, and the failure arrives later as a `generation_failure` message event. The message is
+never delivered.
+
+The transport sends content as written by default. To have it escaped, pass `true` as the
+converter's second argument:
+
+```php
+$transport = new SparkPostTransport($sparkpost, null, null, new EmailConverter([], true));
+```
+
+Every run of braces that could open or close an expression is replaced with SparkPost's escape
+macros, so it renders literally. Single braces, such as CSS's `{}`, are left alone. Two kinds of
+message are never escaped: a `SparkPostEmail` carrying substitution data, where the braces are
+the point, and one using a stored template or A/B test, whose content is not built from the
+message at all.
+
+**Escape once.** A second pass escapes the macros themselves, and they then render as visible
+text. If your application already escapes its content — with
+`Hampel\SparkPost\Transmission\Transmission::escapeTemplateSyntax()`, which is what the
+converter calls — leave the option off.
+
 ## The bounce address
 
 SparkPost's `return_path` is the envelope sender: where a bounce is delivered, and the

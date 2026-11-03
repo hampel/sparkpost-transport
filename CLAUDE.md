@@ -27,8 +27,10 @@ composer update --with="symfony/mailer:^7.0" --with="symfony/mime:^7.0"
 
 PHPStan runs at **level 10** over `src` and `tests`.
 
-`hampel/sparkpost` is on Packagist and the constraint here is **`^1.0`** — `>=1.0.0 <2.0.0`, so a
-new minor of the API package arrives on a `composer update` and needs no edit here.
+`hampel/sparkpost` is on Packagist and the constraint here is **`^1.2`** — `>=1.2.0 <2.0.0`, so a
+new minor of the API package arrives on a `composer update` and needs no edit here. The floor is
+1.2 rather than 1.0 because `EmailConverter` calls `Transmission::escapeTemplateSyntax()`, which
+arrived there; raise it the same way whenever `src/` starts calling something newer.
 
 **It was `^0.4.0` until 1.0.0, and the difference is worth understanding, because the tightness was
 never a policy.** Below 1.0 a caret cannot reach the next minor: `^0.4.0` is `>=0.4.0 <0.5.0`, so
@@ -147,6 +149,17 @@ because it is written later.
 The defaults apply to a plain `Email` too, which is the case they exist for: a framework's
 own mailer builds `Email`, not `SparkPostEmail`, so without this an application cannot say
 "never track, always transactional" once.
+
+### Template escaping is opt-in, because it cannot be done twice
+
+SparkPost runs its template language over inline subject, text and html whether or not
+substitution data is sent, so `{{` in ordinary content either vanishes or fails generation after
+the send was accepted. `EmailConverter`'s `$escapeTemplateSyntax` makes it literal. **It is off by
+default and must stay off by default**: the escape is not idempotent, so a consumer that already
+escapes its own content would see the macros as visible text the day a default flipped — and that
+is a change to what an application sends with no edit on its side, which the release rule below
+forbids doing quietly. It also skips a `SparkPostEmail` with substitution data, where the braces
+are deliberate, and inferring intent any further than that is guessing.
 
 ### Inline images are named by filename, not content id
 

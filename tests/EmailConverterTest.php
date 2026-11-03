@@ -16,9 +16,9 @@ final class EmailConverterTest extends TestCase
      * @param  array<string, mixed>  $defaults
      * @return array<mixed>
      */
-    private function convert(Email $email, ?Envelope $envelope = null, array $defaults = []): array
+    private function convert(Email $email, ?Envelope $envelope = null, array $defaults = [], bool $escape = false): array
     {
-        return (new EmailConverter($defaults))->convert($email, $envelope ?? Envelope::create($email))->toArray();
+        return (new EmailConverter($defaults, $escape))->convert($email, $envelope ?? Envelope::create($email))->toArray();
     }
 
     /**
@@ -340,5 +340,70 @@ final class EmailConverterTest extends TestCase
         $email->from('webmaster@example.com')->to('alice@example.com')->subject('Ignored')->text('Ignored.');
 
         $this->assertSame(['ab_test_id' => 'subject-line'], self::path($this->convert($email), 'content'));
+    }
+
+    public function test_template_syntax_is_sent_as_written_by_default(): void
+    {
+        $payload = $this->convert($this->email()->subject('Hi {{name}}')->text('Hi {{name}}')->html('<p>Hi {{name}}</p>'));
+
+        $this->assertSame('Hi {{name}}', self::path($payload, 'content.subject'));
+        $this->assertSame('Hi {{name}}', self::path($payload, 'content.text'));
+        $this->assertSame('<p>Hi {{name}}</p>', self::path($payload, 'content.html'));
+    }
+
+    public function test_escaping_makes_the_subject_text_and_html_literal(): void
+    {
+        $email = $this->email()->subject('Hi {{name}}')->text('Hi {{name.field}}')->html('<p>Hi {{name[0]}}</p>');
+
+        $payload = $this->convert($email, escape: true);
+
+        $this->assertSame('Hi {{ opening_double_curly() }}name{{ closing_double_curly() }}', self::path($payload, 'content.subject'));
+        $this->assertSame('Hi {{ opening_double_curly() }}name.field{{ closing_double_curly() }}', self::path($payload, 'content.text'));
+        $this->assertSame('<p>Hi {{ opening_double_curly() }}name[0]{{ closing_double_curly() }}</p>', self::path($payload, 'content.html'));
+    }
+
+    public function test_escaping_leaves_single_braces_alone(): void
+    {
+        $html = '<style>p { margin: 0 }</style><p>Body.</p>';
+
+        $this->assertSame($html, self::path($this->convert($this->email()->html($html), escape: true), 'content.html'));
+    }
+
+    public function test_escaping_reads_a_body_set_from_a_stream(): void
+    {
+        $payload = $this->convert($this->email()->text($this->stream('Hi {{name}}')), escape: true);
+
+        $this->assertSame('Hi {{ opening_double_curly() }}name{{ closing_double_curly() }}', self::path($payload, 'content.text'));
+    }
+
+    public function test_a_message_with_substitution_data_is_never_escaped(): void
+    {
+        $email = (new SparkPostEmail())->setSubstitutionData(['name' => 'Alice']);
+        $email->from('webmaster@example.com')->to('alice@example.com')->subject('Hi {{name}}')->text('Hi {{name}}');
+
+        $payload = $this->convert($email, escape: true);
+
+        $this->assertSame('Hi {{name}}', self::path($payload, 'content.subject'));
+        $this->assertSame('Hi {{name}}', self::path($payload, 'content.text'));
+    }
+
+    public function test_a_sparkpost_email_without_substitution_data_is_escaped(): void
+    {
+        $email = new SparkPostEmail();
+        $email->from('webmaster@example.com')->to('alice@example.com')->subject('Hello')->text('Hi {{name}}');
+
+        $payload = $this->convert($email, escape: true);
+
+        $this->assertSame('Hi {{ opening_double_curly() }}name{{ closing_double_curly() }}', self::path($payload, 'content.text'));
+    }
+
+    public function test_escaping_does_not_touch_a_template(): void
+    {
+        $email = (new SparkPostEmail())->setTemplate('welcome');
+        $email->from('webmaster@example.com')->to('alice@example.com')->subject('{{x}}')->text('{{x}}');
+
+        $payload = $this->convert($email, escape: true);
+
+        $this->assertSame(['template_id' => 'welcome', 'use_draft_template' => false], self::path($payload, 'content'));
     }
 }
