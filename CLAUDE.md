@@ -152,14 +152,14 @@ own mailer builds `Email`, not `SparkPostEmail`, so without this an application 
 
 ### Template escaping is opt-in, because it cannot be done twice
 
-SparkPost runs its template language over inline subject, text, html and custom header values
-whether or not substitution data is sent, so `{{` in ordinary content either vanishes or fails
-generation after the send was accepted. `EmailConverter`'s `$escapeTemplateSyntax` makes it literal. **It is off by
-default and must stay off by default**: the escape is not idempotent, so a consumer that already
-escapes its own content would see the macros as visible text the day a default flipped — and that
-is a change to what an application sends with no edit on its side, which the release rule below
-forbids doing quietly. It also skips a `SparkPostEmail` with substitution data, where the braces
-are deliberate, and inferring intent any further than that is guessing.
+SparkPost runs its template language over the From display name, subject, text, html and custom
+header values whether or not substitution data is sent, so `{{` in ordinary content either vanishes
+or fails generation after the send was accepted. `EmailConverter`'s `$escapeTemplateSyntax` makes it
+literal. **It is off by default and must stay off by default**: the escape is not idempotent, so a
+consumer that already escapes its own content would see the macros as visible text the day a default
+flipped — and that is a change to what an application sends with no edit on its side, which the
+release rule below forbids doing quietly. It also skips a `SparkPostEmail` with substitution data,
+where the braces are deliberate, and inferring intent any further than that is guessing.
 
 ### Inline images are named by filename, not content id
 

@@ -5,9 +5,10 @@ Unreleased
 ----------
 
 * `EmailConverter` takes a second argument, `$escapeTemplateSyntax`, default `false`. When `true`,
-  double curly braces in the subject, text, html and custom header values are replaced with
-  SparkPost's escape macros so they render literally, except on a `SparkPostEmail` carrying
-  substitution data. Off by default, so nothing an application sends changes unless it opts in
+  double curly braces in the From display name, subject, text, html and custom header values are
+  replaced with SparkPost's escape macros so they render literally, except on a `SparkPostEmail`
+  carrying substitution data. Off by default, so nothing an application sends changes unless it opts
+  in
 * requires `hampel/sparkpost` `^1.2`, for `Transmission::escapeTemplateSyntax()`
 
 1.0.0 (2026-09-04)

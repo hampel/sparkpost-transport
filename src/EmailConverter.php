@@ -36,9 +36,9 @@ final class EmailConverter
      *                                                message - open_tracking, transactional,
      *                                                ip_pool - each overridden by anything the
      *                                                message itself carries.
-     * @param  bool  $escapeTemplateSyntax  make double curly braces in the subject, text, html
-     *                                      and custom header values render literally. See
-     *                                      escapesTemplateSyntax().
+     * @param  bool  $escapeTemplateSyntax  make double curly braces in the From display name,
+     *                                      subject, text, html and custom header values render
+     *                                      literally. See escapesTemplateSyntax().
      */
     public function __construct(
         private readonly array $defaultOptions = [],
@@ -57,10 +57,10 @@ final class EmailConverter
             $transmission->option($key, $value);
         }
 
-        $this->applyFrom($transmission, $email, $envelope);
-        $this->applyAddresses($transmission, $email);
         $escape = $this->escapesTemplateSyntax($email);
 
+        $this->applyFrom($transmission, $email, $envelope, $escape);
+        $this->applyAddresses($transmission, $email);
         $this->applyBody($transmission, $email, $escape);
         $this->applyHeaders($transmission, $email, $escape);
         $this->applyAttachments($transmission, $email);
@@ -80,13 +80,15 @@ final class EmailConverter
         return $transmission;
     }
 
-    private function applyFrom(Transmission $transmission, Email $email, Envelope $envelope): void
+    private function applyFrom(Transmission $transmission, Email $email, Envelope $envelope, bool $escape): void
     {
         // Prefer the message's own From. Fall back to the envelope sender, which Symfony
         // will have synthesised if it had to.
         $from = $email->getFrom()[0] ?? $envelope->getSender();
 
-        $transmission->from($from->getAddress(), $from->getName());
+        // The display name is rendered as a template like the body; the address is not, and
+        // SparkPost refuses one that is not a configured sending domain regardless.
+        $transmission->from($from->getAddress(), self::literal($escape)($from->getName()));
 
         // The sender half of the same rule the recipients follow: delivery comes from the
         // envelope. Symfony resolves the envelope sender from Return-Path, then Sender, then

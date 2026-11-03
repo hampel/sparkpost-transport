@@ -427,4 +427,16 @@ final class EmailConverterTest extends TestCase
 
         $this->assertSame('Hello {{contact.name}} there', self::path($this->convert($email), 'content.headers.X-Probe'));
     }
+
+    public function test_escaping_makes_the_from_display_name_literal(): void
+    {
+        $email = $this->email()->from(new Address('webmaster@example.com', '{{contact.name}} via Example'));
+
+        $payload = $this->convert($email, escape: true);
+
+        $this->assertSame(
+            ['email' => 'webmaster@example.com', 'name' => '{{ opening_double_curly() }}contact.name{{ closing_double_curly() }} via Example'],
+            self::path($payload, 'content.from')
+        );
+    }
 }

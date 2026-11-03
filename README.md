@@ -161,9 +161,9 @@ tracking back on without disturbing the default.
 
 ## Template syntax
 
-**SparkPost renders the subject, text, HTML and custom header values through its template
-language whether or not you send substitution data.** So a message that merely contains double
-curly braces — text a user wrote, a code sample — is read as template syntax:
+**SparkPost renders the From display name, subject, text, HTML and custom header values through
+its template language whether or not you send substitution data.** So a message that merely
+contains double curly braces — text a user wrote, a code sample — is read as template syntax:
 
 | the content contains | with no matching substitution value |
 |---|---|
