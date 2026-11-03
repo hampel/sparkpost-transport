@@ -27,10 +27,12 @@ composer update --with="symfony/mailer:^7.0" --with="symfony/mime:^7.0"
 
 PHPStan runs at **level 10** over `src` and `tests`.
 
-`hampel/sparkpost` is on Packagist and the constraint here is **`^1.2`** — `>=1.2.0 <2.0.0`, so a
-new minor of the API package arrives on a `composer update` and needs no edit here. The floor is
-1.2 rather than 1.0 because `EmailConverter` calls `Transmission::escapeTemplateSyntax()`, which
-arrived there; raise it the same way whenever `src/` starts calling something newer.
+`hampel/sparkpost` is on Packagist and the constraint here is **`^1.2.1`** — `>=1.2.1 <2.0.0`, so
+a new minor of the API package arrives on a `composer update` and needs no edit here. The floor is
+1.2 because `EmailConverter` calls `Transmission::escapeTemplateSyntax()`, which arrived there, and
+1.2.1 because every To, Cc and Reply-To display name goes through its address formatter: before
+1.2.1 a name containing a comma was written unquoted, which a mail client reads as two addresses.
+Raise the floor the same way whenever `src/` starts calling something newer, or relies on a fix.
 
 **It was `^0.4.0` until 1.0.0, and the difference is worth understanding, because the tightness was
 never a policy.** Below 1.0 a caret cannot reach the next minor: `^0.4.0` is `>=0.4.0 <0.5.0`, so

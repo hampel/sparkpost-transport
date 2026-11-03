@@ -9,7 +9,8 @@ Unreleased
   display names are replaced with SparkPost's escape macros so they render literally, except on a
   `SparkPostEmail` carrying substitution data. Off by default, so nothing an application sends
   changes unless it opts in
-* requires `hampel/sparkpost` `^1.2`, for `Transmission::escapeTemplateSyntax()`
+* requires `hampel/sparkpost` `^1.2.1`, for `Transmission::escapeTemplateSyntax()` and for display
+  names containing a comma, which 1.2.0 wrote into the To, Cc and Reply-To lines unquoted
 
 1.0.0 (2026-09-04)
 ------------------
