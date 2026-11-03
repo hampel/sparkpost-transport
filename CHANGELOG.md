@@ -1,16 +1,18 @@
 CHANGELOG
 =========
 
-Unreleased
-----------
+1.1.0 (2026-11-03)
+------------------
 
 * `EmailConverter` takes a second argument, `$escapeTemplateSyntax`, default `false`. When `true`,
   double curly braces in the subject, text, html, custom header values and the From, Cc and Reply-To
   display names are replaced with SparkPost's escape macros so they render literally, except on a
   `SparkPostEmail` carrying substitution data. Off by default, so nothing an application sends
   changes unless it opts in
-* requires `hampel/sparkpost` `^1.2.1`, for `Transmission::escapeTemplateSyntax()` and for display
-  names containing a comma, which 1.2.0 wrote into the To, Cc and Reply-To lines unquoted
+* requires `hampel/sparkpost` `^1.2.1`. An application that changes nothing will now send a To, Cc
+  or Reply-To display name containing a comma, period or other RFC 5322 special as a quoted string -
+  `"Smith, John" <john@example.com>` where it previously sent `Smith, John <john@example.com>`,
+  which a mail client reads as two addresses
 
 1.0.0 (2026-09-04)
 ------------------
