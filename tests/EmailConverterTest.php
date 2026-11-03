@@ -439,4 +439,30 @@ final class EmailConverterTest extends TestCase
             self::path($payload, 'content.from')
         );
     }
+
+    public function test_escaping_makes_cc_and_reply_to_display_names_literal(): void
+    {
+        $email = $this->email()
+            ->cc(new Address('carol@example.com', '{{contact}}'))
+            ->replyTo(new Address('reply@example.com', '{{contact}}'));
+
+        $payload = $this->convert($email, escape: true);
+        $escaped = '{{ opening_double_curly() }}contact{{ closing_double_curly() }}';
+
+        // Contains rather than equals: whether the name is also quoted is the API package's call.
+        foreach (['content.headers.CC', 'content.reply_to'] as $path) {
+            $value = self::path($payload, $path);
+            $this->assertIsString($value);
+            $this->assertStringContainsString($escaped, $value);
+        }
+    }
+
+    public function test_escaping_leaves_to_display_names_alone(): void
+    {
+        $email = $this->email()->to(new Address('alice@example.com', '{{contact}}'));
+
+        $payload = $this->convert($email, escape: true);
+
+        $this->assertStringNotContainsString('opening_double_curly', (string) json_encode($payload));
+    }
 }

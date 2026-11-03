@@ -36,9 +36,9 @@ final class EmailConverter
      *                                                message - open_tracking, transactional,
      *                                                ip_pool - each overridden by anything the
      *                                                message itself carries.
-     * @param  bool  $escapeTemplateSyntax  make double curly braces in the From display name,
-     *                                      subject, text, html and custom header values render
-     *                                      literally. See escapesTemplateSyntax().
+     * @param  bool  $escapeTemplateSyntax  make double curly braces in the From, Cc and Reply-To
+     *                                      display names, subject, text, html and custom header
+     *                                      values render literally. See escapesTemplateSyntax().
      */
     public function __construct(
         private readonly array $defaultOptions = [],
@@ -60,7 +60,7 @@ final class EmailConverter
         $escape = $this->escapesTemplateSyntax($email);
 
         $this->applyFrom($transmission, $email, $envelope, $escape);
-        $this->applyAddresses($transmission, $email);
+        $this->applyAddresses($transmission, $email, $escape);
         $this->applyBody($transmission, $email, $escape);
         $this->applyHeaders($transmission, $email, $escape);
         $this->applyAttachments($transmission, $email);
@@ -106,14 +106,19 @@ final class EmailConverter
         }
     }
 
-    private function applyAddresses(Transmission $transmission, Email $email): void
+    private function applyAddresses(Transmission $transmission, Email $email, bool $escape): void
     {
+        $literal = self::literal($escape);
+
+        // Not escaped: the To names go into header_to, per recipient, and whether SparkPost
+        // renders that as a template has not been measured. Every field that has been does.
         foreach ($email->getTo() as $address) {
             $transmission->to($address->getAddress(), $address->getName());
         }
 
+        // The CC header and Reply-To are rendered as templates, quoted display name or not.
         foreach ($email->getCc() as $address) {
-            $transmission->cc($address->getAddress(), $address->getName());
+            $transmission->cc($address->getAddress(), $literal($address->getName()));
         }
 
         foreach ($email->getBcc() as $address) {
@@ -121,7 +126,7 @@ final class EmailConverter
         }
 
         foreach ($email->getReplyTo() as $address) {
-            $transmission->replyTo($address->getAddress(), $address->getName());
+            $transmission->replyTo($address->getAddress(), $literal($address->getName()));
         }
     }
 
