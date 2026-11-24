@@ -234,6 +234,7 @@ vendor/bin/rig render           # payloads only - no credential, no network
 vendor/bin/rig send             # SparkPostEmail: campaign, metadata, the SparkPost return path
 vendor/bin/rig envelope         # a plain Email: Return-Path via the envelope sender
 vendor/bin/rig rich             # Cc, Bcc, an attachment and an inline image
+vendor/bin/rig templating       # whether SparkPost renders To display names as templates
 ```
 
 **`hampel/rig` must be `^1.1`.** From 0.2.0 the rig refuses to load `.env` at all when `CLAUDECODE`
