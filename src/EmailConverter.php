@@ -110,8 +110,9 @@ final class EmailConverter
     {
         $literal = self::literal($escape);
 
-        // Not escaped: the To names go into header_to, per recipient, and whether SparkPost
-        // renders that as a template has not been measured. Every field that has been does.
+        // Not escaped, because header_to is not rendered as a template - measured by a real
+        // send, unlike the Cc and Reply-To below. Escaping it would put the macros themselves
+        // into the recipient's To: line.
         foreach ($email->getTo() as $address) {
             $transmission->to($address->getAddress(), $address->getName());
         }

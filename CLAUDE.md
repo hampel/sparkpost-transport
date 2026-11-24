@@ -162,9 +162,16 @@ escape is not idempotent, so a consumer that already escapes its own content wou
 visible text the day a default flipped — and that is a change to what an application sends with no
 edit on its side, which the release rule below forbids doing quietly. It also skips a
 `SparkPostEmail` with substitution data, where the braces are deliberate, and inferring intent any
-further than that is guessing. The To display names are the one gap: they go into `header_to`, per
-recipient, which the previewer cannot reach, so they stay unescaped until a real send shows they are
-templated.
+further than that is guessing.
+
+**The To display names are deliberately not escaped, because `header_to` is not templated.** The
+previewer that measured every other field takes no recipients, so this one was settled by a real
+send — `vendor/bin/rig templating`: `{{x.y}}` in `header_to` generated and delivered where it fails
+generation in every templated field, `Before {{x}} After` arrived intact, and an escaped name
+arrived with the macros as visible text. Escaping To would be that last case, in every recipient's
+To: line. Bcc display names never reach SparkPost at all: `convert()` always delivers to the
+envelope's recipients, which carry no names. Re-run the exercise if SparkPost's behaviour is ever
+in doubt; it is the only instrument that can see it.
 
 ### Inline images are named by filename, not content id
 

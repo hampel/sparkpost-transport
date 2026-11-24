@@ -457,6 +457,10 @@ final class EmailConverterTest extends TestCase
         }
     }
 
+    /**
+     * header_to is not rendered as a template, so an escaped To name arrives as visible macro
+     * text. `vendor/bin/rig templating` is the measurement.
+     */
     public function test_escaping_leaves_to_display_names_alone(): void
     {
         $email = $this->email()->to(new Address('alice@example.com', '{{contact}}'));

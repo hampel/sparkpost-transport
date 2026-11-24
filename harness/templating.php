@@ -29,6 +29,10 @@
  *              names, so the payload should show no name at all. If one ever appears, a Bcc
  *              name has started reaching SparkPost and needs measuring in its own right.
  *
+ * Last run 2026-11-24, delivering: all four generated and delivered, no generation_failure;
+ * escaped arrived with the macros as visible text and vanish arrived intact. So header_to is
+ * NOT templated, and EmailConverter is right to leave the To names alone.
+ *
  * What a sink run answers: the failure half, from the message events - bare either fails
  * generation or it does not. What it cannot answer: vanish and escaped, which
  * need a delivered To: header to read. Run with SPARKPOST_DELIVER=1 for those.

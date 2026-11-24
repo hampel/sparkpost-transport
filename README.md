@@ -188,6 +188,10 @@ message are never escaped: a `SparkPostEmail` carrying substitution data, where 
 the point, and one using a stored template or A/B test, whose content is not built from the
 message at all.
 
+The To display names are left as they are, escaping or not: SparkPost does not render them, so
+`{{` there already arrives literally, and escaping would show the macros instead. Bcc names are
+never sent to SparkPost at all.
+
 **Escape once.** A second pass escapes the macros themselves, and they then render as visible
 text. If your application already escapes its content — with
 `Hampel\SparkPost\Transmission\Transmission::escapeTemplateSyntax()`, which is what the
