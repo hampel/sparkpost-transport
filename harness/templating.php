@@ -24,12 +24,13 @@
  *   vanish     To name "Before {{x}} After". Templated renders "Before  After" - a quiet
  *              loss rather than a failure, and only visible in a delivered message.
  *
- *   no-to      Bcc only, name {{x.y}}. With no To there is no header_to, and the name goes
- *              in recipients[].address.name instead - a different field, so a different
- *              question. Settles whether a Bcc name needs escaping too.
+ *   no-to      Bcc only, name {{x.y}}. A control rather than a question: the converter
+ *              always delivers to the envelope recipients, which Symfony strips of display
+ *              names, so the payload should show no name at all. If one ever appears, a Bcc
+ *              name has started reaching SparkPost and needs measuring in its own right.
  *
- * What a sink run answers: the failure half, from the message events - bare and no-to
- * either fail generation or they do not. What it cannot answer: vanish and escaped, which
+ * What a sink run answers: the failure half, from the message events - bare either fails
+ * generation or it does not. What it cannot answer: vanish and escaped, which
  * need a delivered To: header to read. Run with SPARKPOST_DELIVER=1 for those.
  *
  * Needs SPARKPOST_API_KEY with "Message Events: Read" as well as "Transmissions:
@@ -202,7 +203,7 @@ foreach ($sent as $id => $case) {
 }
 
 if (! $deliver) {
-    $io->warn('Sink: bare and no-to are answered above. escaped and vanish are not - they need');
+    $io->warn('Sink: bare is answered above. escaped and vanish are not - they need');
     $io->warn('a delivered To: header. Run with SPARKPOST_DELIVER=1 to read them.');
 } else {
     $io->info('Read the To: header of each delivered message:');
